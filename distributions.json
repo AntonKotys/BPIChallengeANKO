@@ -1,0 +1,277 @@
+{
+  "A_Create Application": {
+    "best_dist": "lognorm",
+    "params": [
+      1.7368308696946315,
+      0.0,
+      0.049585842224975765
+    ],
+    "aic": -65094.69943183352,
+    "n": 31509,
+    "unit": "seconds"
+  },
+  "A_Submitted": {
+    "best_dist": "lognorm",
+    "params": [
+      0.48948668602287404,
+      0.0,
+      0.30356132022627763
+    ],
+    "aic": -19911.78107979157,
+    "n": 20423,
+    "unit": "seconds"
+  },
+  "W_Handle leads": {
+    "best_dist": "lognorm",
+    "params": [
+      4.858450654272143,
+      0.0,
+      1.917354568731484
+    ],
+    "aic": 345090.34520551696,
+    "n": 47264,
+    "unit": "seconds"
+  },
+  "W_Complete application": {
+    "best_dist": "lognorm",
+    "params": [
+      6.2553300172457735,
+      0.0,
+      2.080326905026013
+    ],
+    "aic": 1185560.82011834,
+    "n": 148756,
+    "unit": "seconds"
+  },
+  "A_Concept": {
+    "best_dist": "gamma",
+    "params": [
+      0.18785804169661166,
+      0.0,
+      294845.06895539444
+    ],
+    "aic": 617699.902368784,
+    "n": 31509,
+    "unit": "seconds"
+  },
+  "A_Accepted": {
+    "best_dist": "lognorm",
+    "params": [
+      0.9514972112610338,
+      0.0,
+      181.21502316792368
+    ],
+    "aic": 413965.2117795247,
+    "n": 31509,
+    "unit": "seconds"
+  },
+  "O_Create Offer": {
+    "best_dist": "lognorm",
+    "params": [
+      0.4378906768026551,
+      0.0,
+      0.963320873219165
+    ],
+    "aic": 47797.85034658286,
+    "n": 42995,
+    "unit": "seconds"
+  },
+  "O_Created": {
+    "best_dist": "lognorm",
+    "params": [
+      1.2918938969908975,
+      0.0,
+      34.07459936027997
+    ],
+    "aic": 447463.5667558836,
+    "n": 42995,
+    "unit": "seconds"
+  },
+  "O_Sent (mail and online)": {
+    "best_dist": "lognorm",
+    "params": [
+      5.426740997855055,
+      0.0,
+      0.1317637421347258
+    ],
+    "aic": 86021.14477689403,
+    "n": 39692,
+    "unit": "seconds"
+  },
+  "W_Call after offers": {
+    "best_dist": "lognorm",
+    "params": [
+      8.280460122505328,
+      0.0,
+      9.128387494865393
+    ],
+    "aic": 2086711.027444492,
+    "n": 181635,
+    "unit": "seconds"
+  },
+  "A_Complete": {
+    "best_dist": "lognorm",
+    "params": [
+      1.1522765152062628,
+      0.0,
+      141.40852191266038
+    ],
+    "aic": 408485.4569831183,
+    "n": 31362,
+    "unit": "seconds"
+  },
+  "A_Cancelled": {
+    "best_dist": "lognorm",
+    "params": [
+      0.5499631089096668,
+      0.0,
+      0.03347317468426913
+    ],
+    "aic": -53734.020932113286,
+    "n": 10431,
+    "unit": "seconds"
+  },
+  "O_Cancelled": {
+    "best_dist": "lognorm",
+    "params": [
+      3.438110334033611,
+      0.0,
+      0.033258635254680986
+    ],
+    "aic": -24673.18201235132,
+    "n": 16462,
+    "unit": "seconds"
+  },
+  "W_Validate application": {
+    "best_dist": "lognorm",
+    "params": [
+      6.504673352620048,
+      0.0,
+      4.646605821227551
+    ],
+    "aic": 1900476.2397680185,
+    "n": 196834,
+    "unit": "seconds"
+  },
+  "A_Validating": {
+    "best_dist": "lognorm",
+    "params": [
+      1.4785097020200468,
+      0.0,
+      28.54172417224307
+    ],
+    "aic": 400691.1607194102,
+    "n": 38816,
+    "unit": "seconds"
+  },
+  "O_Returned": {
+    "best_dist": "lognorm",
+    "params": [
+      1.217110834486893,
+      0.0,
+      189.61353411544215
+    ],
+    "aic": 319755.82077760063,
+    "n": 23304,
+    "unit": "seconds"
+  },
+  "O_Accepted": {
+    "best_dist": "lognorm",
+    "params": [
+      0.7454976565272933,
+      0.0,
+      0.004994061841249772
+    ],
+    "aic": -143822.66294082985,
+    "n": 17228,
+    "unit": "seconds"
+  },
+  "A_Pending": {
+    "best_dist": "lognorm",
+    "params": [
+      0.6398477541775256,
+      0.0,
+      0.003541144026068796
+    ],
+    "aic": -160934.25181150495,
+    "n": 17228,
+    "unit": "seconds"
+  },
+  "W_Call incomplete files": {
+    "best_dist": "lognorm",
+    "params": [
+      6.992676291511593,
+      0.0,
+      10.472796366240225
+    ],
+    "aic": 1872053.7126063688,
+    "n": 163853,
+    "unit": "seconds"
+  },
+  "A_Incomplete": {
+    "best_dist": "lognorm",
+    "params": [
+      1.4315085033461954,
+      0.0,
+      32.520085888400104
+    ],
+    "aic": 242522.70903214393,
+    "n": 23055,
+    "unit": "seconds"
+  },
+  "A_Denied": {
+    "best_dist": "lognorm",
+    "params": [
+      0.5186238950860292,
+      0.0,
+      0.038299975249425786
+    ],
+    "aic": -18753.578474953087,
+    "n": 3752,
+    "unit": "seconds"
+  },
+  "O_Refused": {
+    "best_dist": "lognorm",
+    "params": [
+      0.5661596579714642,
+      0.0,
+      0.012396683303609796
+    ],
+    "aic": -33237.10660223018,
+    "n": 4695,
+    "unit": "seconds"
+  },
+  "O_Sent (online only)": {
+    "best_dist": "gamma",
+    "params": [
+      0.12041339677561912,
+      0.0,
+      1575005.3406214046
+    ],
+    "aic": 35509.591121564794,
+    "n": 2018,
+    "unit": "seconds"
+  },
+  "W_Assess potential fraud": {
+    "best_dist": "weibull_min",
+    "params": [
+      0.19909671140224805,
+      0.0,
+      913.507132294296
+    ],
+    "aic": 45195.25442348572,
+    "n": 3180,
+    "unit": "seconds"
+  },
+  "W_Shortened completion ": {
+    "best_dist": "lognorm",
+    "params": [
+      6.730264354921466,
+      0.0,
+      2.0343984994224833
+    ],
+    "aic": 1886.6609696199353,
+    "n": 233,
+    "unit": "seconds"
+  }
+}
