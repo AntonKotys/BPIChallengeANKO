@@ -1,14 +1,16 @@
 import heapq
 from datetime import datetime
+from typing import Optional, List
+
 import pandas as pd
 import json
+import numpy as np
 import random
 from datetime import timedelta
 from scipy.stats import lognorm, gamma, weibull_min
 
 from pm4py.objects.log.obj import EventLog, Trace, Event
 from pm4py.objects.log.exporter.xes import exporter as xes_exporter
-
 
 # ============================================================
 # CONFIGURATION (minimal)
@@ -18,6 +20,7 @@ SIM_START_TIME = datetime(2016, 1, 1, 9, 0, 0)
 START_ACTIVITY = "A_Create Application"
 NUM_CASES = 100
 MAX_EVENTS_PER_CASE = 200
+LAMBDA_RATE = 1 / 1089.18
 with open("distributions.json", "r") as f:
     DIST_DATA = json.load(f)
 
@@ -26,7 +29,6 @@ DIST_MAP = {
     "gamma": gamma,
     "weibull_min": weibull_min
 }
-
 
 # ============================================================
 # ROUTING MODEL
@@ -112,13 +114,13 @@ GATEWAYS = {
 }
 
 
-
 # ============================================================
 # 1.1 SIMULATION ENGINE CORE
 # ============================================================
 
 class SimEvent:
     """Single discrete event, ordered by timestamp for priority queue."""
+
     def __init__(self, time: datetime, case_id: str, activity: str):
         self.time = time
         self.case_id = case_id
@@ -137,7 +139,7 @@ class SimulationEngine:
     - logs executed events
     """
 
-    def __init__(self, process_model: dict, start_time: datetime, gateways: dict | None = None):
+    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None):
         self.model = process_model
         self.gateways = gateways or {}
         self.now = start_time
@@ -156,7 +158,7 @@ class SimulationEngine:
         })
 
     # SAIFULLA YOU MAKE YOUR MAGIC HERE
-    def route_next(self, activity: str) -> list[str]:
+    def route_next(self, activity: str) -> List[str]:
         """
         Decide which outgoing activities to schedule based on gateway semantics.
 
@@ -176,7 +178,7 @@ class SimulationEngine:
             or_candidates = [a for a in outgoing if a != cancel_act]
 
             # 1) sometimes cancel only (mutually exclusive)
-            if cancel_act in outgoing and random.random() < 0.2: #chose here randomly 0.2
+            if cancel_act in outgoing and random.random() < 0.2:  # chose here randomly 0.2
                 return [cancel_act]  # <-- RANDOM cancel decision HERE
 
             # 2) otherwise normal OR split among remaining branches
@@ -260,8 +262,14 @@ class SimulationEngine:
 # ============================================================
 # 1.2 INSTANCE SPAWN RATES (Emi's part) - PLACEHOLDER
 # ============================================================
+MAX_INTER_ARRIVAL = 24 * 60 * 60  # I approximated this to 1 day
 
-def spawn_cases(engine: SimulationEngine, n_cases: int, start_activity: str, start_time: datetime):
+
+def spawn_cases(engine_n: SimulationEngine,
+                n_cases: int,
+                start_activity: str,
+                start_time: datetime,
+                lambda_rate: float):
     """
     (1.2) Emi implements:
 
@@ -270,8 +278,10 @@ def spawn_cases(engine: SimulationEngine, n_cases: int, start_activity: str, sta
     t = start_time
     for i in range(1, n_cases + 1):
         case_id = f"Case_{i}"
-        engine.schedule_event(t, case_id, start_activity)
-        t = t + timedelta(seconds=1)
+        engine_n.schedule_event(t, case_id, start_activity)
+        inter_arrival_time = np.random.exponential(scale=1 / lambda_rate)
+        inter_arrival_time = min(inter_arrival_time, MAX_INTER_ARRIVAL)
+        t = t + timedelta(seconds=inter_arrival_time)
 
 
 # ============================================================
@@ -285,6 +295,8 @@ def duration_function(activity: str, timestamp: datetime, case_context: dict) ->
     parts = [p.strip() for p in activity.split("&")]
     total_seconds = sum(_sample_one(p) for p in parts)
     return timedelta(seconds=total_seconds)
+
+
 def _sample_one(act_name: str) -> float:
     # LUCAS PLS TAKE A LOOK AT IT
     """Return sampled duration in seconds for a single activity name."""
@@ -302,6 +314,7 @@ def _sample_one(act_name: str) -> float:
     sec = max(0.1, min(sec, 60 * 60 * 24 * 60))  # cap at 60 days
     return sec
 
+
 # ============================================================
 # MAIN
 # ============================================================
@@ -310,7 +323,7 @@ if __name__ == "__main__":
     engine = SimulationEngine(PROCESS_MODEL, SIM_START_TIME, gateways=GATEWAYS)
 
     # 1.2: create initial events (case arrivals)
-    spawn_cases(engine, NUM_CASES, START_ACTIVITY, SIM_START_TIME)
+    spawn_cases(engine, NUM_CASES, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
 
     # 1.1: run core DES loop (uses 1.3 duration function)
     engine.run(duration_function)
