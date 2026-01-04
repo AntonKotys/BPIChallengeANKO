@@ -62,7 +62,7 @@ PROCESS_MODEL = {
 
     "O_Sent (mail and online)": [
         "W_Call after offers & A_Complete",
-        # "O_Create Offer & O_Created"   # add this line when branching implemented
+        # "O_Create Offer & O_Created"   # Saifulla, add this line when branching implemented
     ],
 
     "W_Call after offers & A_Complete": [
@@ -108,7 +108,7 @@ GATEWAYS = {
 
     # Inclusive OR-split (choose random non-empty subset)
     "W_Call after offers & A_Complete": "or",
-    # "O_Sent (mail and online)": "or", add this line when branching implemented
+    # "O_Sent (mail and online)": "or",    Saifulla, add this line when branching implemented
 }
 
 
