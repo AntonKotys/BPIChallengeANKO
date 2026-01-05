@@ -898,6 +898,7 @@ if __name__ == "__main__":
     predictor = ExpertActivityPredictor(mode="basic", basic_context_k=2)
     predictor.fit(sample_data)
 
+
     # Test prediction
     print("\nTest predictions:")
     test_prefix = ["A", "B"]

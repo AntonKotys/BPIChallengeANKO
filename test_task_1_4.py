@@ -288,6 +288,7 @@ def test_6_json_serialization():
         print(f"\nOriginal distribution: {dist1}")
         print(f"Loaded distribution:   {dist2}")
 
+
         # Should be identical
         for act in dist1:
             assert act in dist2, f"Activity {act} missing after load"
