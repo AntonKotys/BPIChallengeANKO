@@ -1,6 +1,6 @@
 import heapq
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import pandas as pd
 import json
@@ -11,7 +11,9 @@ from scipy.stats import lognorm, gamma, weibull_min
 
 from pm4py.objects.log.obj import EventLog, Trace, Event
 from pm4py.objects.log.exporter.xes import exporter as xes_exporter
+# Import Task 1.4 module
 
+from task_1_4_next_activity import ExpertActivityPredictor, train_predictor_from_log
 # ============================================================
 # CONFIGURATION (minimal)
 # ============================================================
@@ -139,13 +141,16 @@ class SimulationEngine:
     - logs executed events
     """
 
-    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None):
+    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None,  predictor: Optional[ExpertActivityPredictor] = None):
         self.model = process_model
         self.gateways = gateways or {}
         self.now = start_time
         self.event_queue = []
         self.log_rows = []
-        self.case_context = {}  # per-case context
+        self.case_context = {}
+        # TASK 1.4: Activity predictor for XOR branching
+        self.predictor = predictor
+        self.case_traces: Dict[str, List[str]] = {}  # Track trace per case# per-case context
 
     def schedule_event(self, time: datetime, case_id: str, activity: str):
         heapq.heappush(self.event_queue, SimEvent(time, case_id, activity))
@@ -157,45 +162,75 @@ class SimulationEngine:
             "time:timestamp": timestamp.isoformat()
         })
 
+        # TASK 1.4: Track executed activities for prediction
+        if case_id not in self.case_traces:
+            self.case_traces[case_id] = []
+        self.case_traces[case_id].append(activity)
+
     # SAIFULLA YOU MAKE YOUR MAGIC HERE
-    def route_next(self, activity: str) -> List[str]:
+    def route_next(self, activity: str, case_id : str) -> List[str]:
         """
         Decide which outgoing activities to schedule based on gateway semantics.
 
-        RANDOM IS IMPLEMENTED HERE: SAIFULLA YOU MAKE YOUR MAGIC HERE
-          - XOR: random.choice(outgoing)
-          - OR : random non-empty subset via random.sample(...)
+        TASK 1.4 INTEGRATION:
+        For XOR gateways, uses ExpertActivityPredictor to sample next activity
+        based on learned probabilities, instead of random.choice().
+
+        Args:
+            activity: Current activity that just completed
+            case_id: Case identifier (needed to access trace history)
+
+        Returns:
+            List of activities to schedule next
         """
         outgoing = self.model.get(activity, [])
         if not outgoing:
             return []
 
-        gw = self.gateways.get(activity)
+        gateway_type = self.gateways.get(activity)
+
+        # Get trace history for this case (TASK 1.4)
+        trace = self.case_traces.get(case_id, [])
 
         # --- SPECIAL CASE: OR-split + exclusive cancellation option ---
         if activity == "W_Call after offers & A_Complete":
             cancel_act = "A_Cancelled & O_Cancelled"
             or_candidates = [a for a in outgoing if a != cancel_act]
 
-            # 1) sometimes cancel only (mutually exclusive)
-            if cancel_act in outgoing and random.random() < 0.2:  # chose here randomly 0.2
-                return [cancel_act]  # <-- RANDOM cancel decision HERE
+            # Determine cancel probability
+            if cancel_act in outgoing:
+                if self.predictor:
+                    # TASK 1.4: Use learned probabilities
+                    dist = self.predictor.get_next_activity_distribution(trace, outgoing)
+                    cancel_prob = dist.get(cancel_act, 0.2)
+                else:
+                    cancel_prob = 0.2  # Default
 
-            # 2) otherwise normal OR split among remaining branches
-            if or_candidates:
-                k = random.randint(1, len(or_candidates))
-                return random.sample(or_candidates, k)  # <-- RANDOM OR subset HERE
-            return []
+                if random.random() < cancel_prob:
+                    return [cancel_act]
 
-        if gw == "xor":
-            return [random.choice(outgoing)]  # <-- RANDOM XOR CHOICE HERE
+        # --- XOR GATEWAY: TASK 1.4 IMPLEMENTATION ---
+        if gateway_type == "xor":
+            if self.predictor:
+                # Use predictor to sample based on learned probabilities
+                sampled = self.predictor.sample_next_activity(
+                    prefix_activities=trace,
+                    enabled_next=outgoing
+                )
+                if sampled:
+                    return [sampled]
 
-        if gw == "or":
+            # Fallback to random if predictor unavailable or returns None
+            return [random.choice(outgoing)]
+
+        # --- OR GATEWAY: Random non-empty subset ---
+        if gateway_type == "or":
             k = random.randint(1, len(outgoing))
-            return random.sample(outgoing, k)  # <-- RANDOM INCLUSIVE(OR) CHOICE HERE
+            return random.sample(outgoing, k)
 
-        # default: schedule all (sequence-like)
+        # --- DEFAULT: Schedule all outgoing (sequence/parallel) ---
         return outgoing
+
 
     def run(self, duration_function):
         """
@@ -228,7 +263,9 @@ class SimulationEngine:
                 continue
 
             # route to next activities using gateway semantics
-            next_activities = self.route_next(event.activity)
+            # Route to next activities (TASK 1.4 applied here for XOR)
+            next_activities = self.route_next(event.activity, event.case_id)
+
 
             for next_act in next_activities:
                 dur = duration_function(next_act, event.time, ctx)
@@ -257,6 +294,14 @@ class SimulationEngine:
 
         xes_exporter.apply(log, path)
         print(f"💾 XES exported to {path}")
+
+    def get_prediction_stats(self) -> dict:
+        """Get statistics about prediction usage (for debugging/evaluation)."""
+        return {
+            "total_cases": len(self.case_traces),
+            "avg_trace_length": np.mean([len(t) for t in self.case_traces.values()]) if self.case_traces else 0,
+            "predictor_mode": self.predictor.mode if self.predictor else "none"
+        }
 
 
 # ============================================================
@@ -313,8 +358,131 @@ def _sample_one(act_name: str) -> float:
 
 
 # ============================================================
+# HELPER: Train predictor from historical data
+# ============================================================
+
+def train_predictor_from_csv(
+        csv_path: str,
+        mode: str = "basic",
+        context_k: int = 2,
+        **kwargs
+) -> ExpertActivityPredictor:
+    """
+    Train an ExpertActivityPredictor from a CSV event log.
+
+    Args:
+        csv_path: Path to CSV with case_id/case:concept:name, activity/concept:name, timestamp
+        mode: 'basic' or 'advanced'
+        context_k: Context window for k-gram
+
+    Returns:
+        Trained predictor
+    """
+    df = pd.read_csv(csv_path)
+
+    # Parse timestamp
+    ts_col = None
+    for col in ["timestamp", "time:timestamp"]:
+        if col in df.columns:
+            ts_col = col
+            break
+    if ts_col:
+        df[ts_col] = pd.to_datetime(df[ts_col])
+
+    predictor = ExpertActivityPredictor(
+        mode=mode,
+        basic_context_k=context_k,
+        **kwargs
+    )
+    predictor.fit(df)
+
+    return predictor
+
+
+# ============================================================
 # MAIN
 # ============================================================
+def run_simulation(
+        predictor: Optional[ExpertActivityPredictor] = None,
+        n_cases: int = NUM_CASES,
+        output_prefix: str = "sim"
+):
+    """
+    Run the full simulation with optional predictor.
+
+    Args:
+        predictor: Trained ExpertActivityPredictor (Task 1.4), or None for random
+        n_cases: Number of cases to simulate
+        output_prefix: Prefix for output files
+
+    Returns:
+        SimulationEngine with results
+    """
+    print("=" * 60)
+    print("  BUSINESS PROCESS SIMULATION")
+    print("=" * 60)
+
+    if predictor:
+        print(f"[Config] Using Task 1.4 predictor (mode={predictor.mode})")
+    else:
+        print("[Config] Using RANDOM branching (no predictor)")
+    print(f"[Config] Number of cases: {n_cases}")
+    print()
+
+    # Create engine with predictor
+    engine = SimulationEngine(
+        PROCESS_MODEL,
+        SIM_START_TIME,
+        gateways=GATEWAYS,
+        predictor=predictor  # TASK 1.4
+    )
+
+    # 1.2: Spawn cases
+    print("[1.2] Spawning case arrivals...")
+    spawn_cases(engine, n_cases, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
+
+    # 1.1 + 1.4: Run simulation (uses predictor in route_next)
+    print("[1.1] Running discrete event simulation...")
+    engine.run(duration_function)
+
+    # Export results
+    print("[Export] Saving logs...")
+    engine.export_csv(f"{output_prefix}.csv")
+    engine.export_xes(f"{output_prefix}.xes")
+
+    # Print stats
+    stats = engine.get_prediction_stats()
+    print()
+    print(f"[Stats] Total cases simulated: {stats['total_cases']}")
+    print(f"[Stats] Average trace length: {stats['avg_trace_length']:.1f}")
+    print(f"[Stats] Predictor mode: {stats['predictor_mode']}")
+
+    return engine
+
+
+if __name__ == "__main__":
+    # Example 1: Run without predictor (random branching)
+    print("\n>>> Running simulation WITHOUT predictor (random)...")
+    engine_random = run_simulation(predictor=None, n_cases=50, output_prefix="sim_random")
+
+    print("\n" + "=" * 60)
+
+    # Example 2: If you have training data, train predictor first
+    # Uncomment the following to train from your event log:
+
+    # print("\n>>> Training predictor from historical data...")
+    # predictor = train_predictor_from_csv(
+    #     "bpi2017filtered.csv",  # Your historical event log
+    #     mode="basic",
+    #     context_k=2
+    # )
+    #
+    # print("\n>>> Running simulation WITH predictor (learned probabilities)...")
+    # engine_pred = run_simulation(predictor=predictor, n_cases=50, output_prefix="sim_predicted")
+
+    print("\n✅ Simulation complete!")
+
+
 
 if __name__ == "__main__":
     engine = SimulationEngine(PROCESS_MODEL, SIM_START_TIME, gateways=GATEWAYS)
