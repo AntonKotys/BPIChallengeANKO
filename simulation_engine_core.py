@@ -289,16 +289,13 @@ def spawn_cases(engine_n: SimulationEngine,
 # ============================================================
 
 def duration_function(activity: str, timestamp: datetime, case_context: dict) -> timedelta:
-    # (1.3) Lukas implements:
-    # LUCAS PLS TAKE A LOOK AT IT
-    # If your model uses combined labels like "X & Y", sum both durations
+    # Combines labels like "X & Y", sum both durations
     parts = [p.strip() for p in activity.split("&")]
     total_seconds = sum(_sample_one(p) for p in parts)
     return timedelta(seconds=total_seconds)
 
 
 def _sample_one(act_name: str) -> float:
-    # LUCAS PLS TAKE A LOOK AT IT
     """Return sampled duration in seconds for a single activity name."""
     info = DIST_DATA.get(act_name)
     if not info:
