@@ -48,7 +48,8 @@ class RollingStochasticAvailabilityModel:
         self.min_points = int(min_points)
         self.min_shift_minutes = int(min_shift_minutes)
         self.condition_on_weekday = bool(condition_on_weekday)
-
+        self.q_start = float(q_start)
+        self.q_end = float(q_end)
         self.rng = np.random.default_rng(random_seed)
 
         # cache sampled daily windows
