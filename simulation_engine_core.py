@@ -14,6 +14,8 @@ from pm4py.objects.log.exporter.xes import exporter as xes_exporter
 # Import Task 1.4 module
 
 from task_1_4_next_activity import ExpertActivityPredictor, train_predictor_from_log
+from task_1_5_resource_availability import TwoWeekAvailabilityModel
+
 # ============================================================
 # CONFIGURATION (minimal)
 # ============================================================
@@ -123,10 +125,11 @@ GATEWAYS = {
 class SimEvent:
     """Single discrete event, ordered by timestamp for priority queue."""
 
-    def __init__(self, time: datetime, case_id: str, activity: str):
+    def __init__(self, time: datetime, case_id: str, activity: str, resource: Optional[str] = None):
         self.time = time
         self.case_id = case_id
         self.activity = activity
+        self.resource = resource
 
     def __lt__(self, other):
         return self.time < other.time
@@ -141,25 +144,29 @@ class SimulationEngine:
     - logs executed events
     """
 
-    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None,  predictor: Optional[ExpertActivityPredictor] = None):
+    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None,  predictor: Optional[ExpertActivityPredictor] = None,
+                 availability_model : Optional[TwoWeekAvailabilityModel] = None,  resource_pool : Optional[list] = None):
         self.model = process_model
         self.gateways = gateways or {}
         self.now = start_time
         self.event_queue = []
         self.log_rows = []
         self.case_context = {}
+        self.availability_model = availability_model
+        self.resource_pool = resource_pool or []
         # TASK 1.4: Activity predictor for XOR branching
         self.predictor = predictor
         self.case_traces: Dict[str, List[str]] = {}  # Track trace per case# per-case context
 
-    def schedule_event(self, time: datetime, case_id: str, activity: str):
-        heapq.heappush(self.event_queue, SimEvent(time, case_id, activity))
+    def schedule_event(self, time: datetime, case_id: str, activity: str, resource: Optional[str] = None):
+        heapq.heappush(self.event_queue, SimEvent(time, case_id, activity, resource))
 
-    def log_event(self, case_id: str, activity: str, timestamp: datetime):
+    def log_event(self, case_id: str, activity: str, timestamp: datetime, resource: Optional[str]):
         self.log_rows.append({
             "case:concept:name": case_id,
             "concept:name": activity,
-            "time:timestamp": timestamp.isoformat()
+            "time:timestamp": timestamp.isoformat(),
+            "org:resource": resource
         })
 
         # TASK 1.4: Track executed activities for prediction
@@ -197,17 +204,23 @@ class SimulationEngine:
             cancel_act = "A_Cancelled & O_Cancelled"
             or_candidates = [a for a in outgoing if a != cancel_act]
 
-            # Determine cancel probability
-            if cancel_act in outgoing:
-                if self.predictor:
-                    # TASK 1.4: Use learned probabilities
-                    dist = self.predictor.get_next_activity_distribution(trace, outgoing)
-                    cancel_prob = dist.get(cancel_act, 0.2)
-                else:
-                    cancel_prob = 0.2  # Default
+            # decide cancel probability
+            if self.predictor:
+                dist = self.predictor.get_next_activity_distribution(trace, outgoing)
+                cancel_prob = dist.get(cancel_act, 0.2)
+            else:
+                cancel_prob = 0.2
 
-                if random.random() < cancel_prob:
-                    return [cancel_act]
+            # 1) cancel ONLY (exclusive)
+            if cancel_act in outgoing and random.random() < cancel_prob:
+                return [cancel_act]
+
+            # 2) otherwise normal inclusive-OR among NON-cancel branches
+            if not or_candidates:
+                return []
+            k = random.randint(1, len(or_candidates))
+            return random.sample(or_candidates, k)
+
 
         # --- XOR GATEWAY: TASK 1.4 IMPLEMENTATION ---
         if gateway_type == "xor":
@@ -248,7 +261,7 @@ class SimulationEngine:
                 continue
 
             # log execution
-            self.log_event(event.case_id, event.activity, event.time)
+            self.log_event(event.case_id, event.activity, event.time, event.resource)
 
             # END semantics
             if event.activity == "END":
@@ -266,10 +279,21 @@ class SimulationEngine:
             # Route to next activities (TASK 1.4 applied here for XOR)
             next_activities = self.route_next(event.activity, event.case_id)
 
-
             for next_act in next_activities:
                 dur = duration_function(next_act, event.time, ctx)
-                self.schedule_event(event.time + dur, event.case_id, next_act)
+
+                # 1.7 placeholder (random resource) but needed for 1.5
+                if self.resource_pool:
+                    r = random.choice(self.resource_pool)
+                else:
+                    r = None
+
+                # 1.5 resource availability: delay start until resource is on shift
+                start_time = event.time
+                if r is not None and self.availability_model is not None:
+                    start_time = self.availability_model.next_available(r, start_time)
+
+                self.schedule_event(start_time + dur, event.case_id, next_act, resource=r)
 
     def export_csv(self, path: str):
         df = pd.DataFrame(self.log_rows)
@@ -288,7 +312,8 @@ class SimulationEngine:
             for _, row in group.iterrows():
                 trace.append(Event({
                     "concept:name": row["concept:name"],
-                    "time:timestamp": pd.to_datetime(row["time:timestamp"])
+                    "time:timestamp": pd.to_datetime(row["time:timestamp"]),
+                    "org:resource": row.get("org:resource", None)
                 }))
             log.append(trace)
 
@@ -317,13 +342,18 @@ def spawn_cases(engine_n: SimulationEngine,
                 lambda_rate: float):
     """
     (1.2) Emi implements:
-
-    Current placeholder: spawn one case every x seconds.
     """
     t = start_time
     for i in range(1, n_cases + 1):
         case_id = f"Case_{i}"
-        engine_n.schedule_event(t, case_id, start_activity)
+        # RANDOM CHOICE FOR NOW
+        r = random.choice(engine_n.resource_pool) if engine_n.resource_pool else None
+        if r and engine_n.availability_model:
+            t0 = engine_n.availability_model.next_available(r, t)
+        else:
+            t0 = t
+        engine_n.schedule_event(t0, case_id, start_activity, resource=r)
+
         inter_arrival_time = np.random.exponential(scale=1 / lambda_rate)
         inter_arrival_time = min(inter_arrival_time, MAX_INTER_ARRIVAL)
         t = t + timedelta(seconds=inter_arrival_time)
@@ -429,12 +459,20 @@ def run_simulation(
     print(f"[Config] Number of cases: {n_cases}")
     print()
 
+    availability = TwoWeekAvailabilityModel.fit_from_csv("bpi2017.csv")
+
+    # resource pool from log (simple)
+    df = pd.read_csv("bpi2017.csv", usecols=["org:resource"]).dropna()
+    resource_pool = df["org:resource"].astype(str).unique().tolist()
+
     # Create engine with predictor
     engine = SimulationEngine(
         PROCESS_MODEL,
         SIM_START_TIME,
         gateways=GATEWAYS,
-        predictor=predictor  # TASK 1.4
+        predictor=predictor,  # TASK 1.4
+        availability_model=availability,
+        resource_pool=resource_pool,
     )
 
     # 1.2: Spawn cases
@@ -463,7 +501,7 @@ def run_simulation(
 if __name__ == "__main__":
     # Example 1: Run without predictor (random branching)
     print("\n>>> Running simulation WITHOUT predictor (random)...")
-    engine_random = run_simulation(predictor=None, n_cases=50, output_prefix="sim_random")
+    engine_random = run_simulation(predictor=None, n_cases=NUM_CASES, output_prefix="sim_random")
 
     print("\n" + "=" * 60)
 
@@ -484,15 +522,15 @@ if __name__ == "__main__":
 
 
 
-if __name__ == "__main__":
-    engine = SimulationEngine(PROCESS_MODEL, SIM_START_TIME, gateways=GATEWAYS)
-
-    # 1.2: create initial events (case arrivals)
-    spawn_cases(engine, NUM_CASES, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
-
-    # 1.1: run core DES loop (uses 1.3 duration function)
-    engine.run(duration_function)
-
-    # export
-    engine.export_csv("sim.csv")
-    engine.export_xes("sim.xes")
+# if __name__ == "__main__":
+#     engine = SimulationEngine(PROCESS_MODEL, SIM_START_TIME, gateways=GATEWAYS)
+#
+#     # 1.2: create initial events (case arrivals)
+#     spawn_cases(engine, NUM_CASES, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
+#
+#     # 1.1: run core DES loop (uses 1.3 duration function)
+#     engine.run(duration_function)
+#
+#     # export
+#     engine.export_csv("sim.csv")
+#     engine.export_xes("sim.xes")
