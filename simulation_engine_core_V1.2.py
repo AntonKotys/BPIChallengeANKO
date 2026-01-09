@@ -13,6 +13,7 @@ from pm4py.objects.log.obj import EventLog, Trace, Event
 from pm4py.objects.log.exporter.xes import exporter as xes_exporter
 # Import Task 1.4 module
 
+
 from task_1_4_next_activity import ExpertActivityPredictor, train_predictor_from_log
 from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabilityModel
 
