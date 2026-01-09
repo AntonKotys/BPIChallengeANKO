@@ -37,11 +37,11 @@ class RollingStochasticAvailabilityModel:
         daily_stats: pd.DataFrame,
         window_days: int = 28,
         min_points: int = 6,
-        q_start: float = 0.10,
-        q_end: float = 0.90,
-        min_shift_minutes: int = 60,
+        q_start: float = 0.05,
+        q_end: float = 0.95,
+        min_shift_minutes: int = 360,
         random_seed: int = 42,
-        condition_on_weekday: bool = True,
+        condition_on_weekday: bool = False,
     ):
         self.daily_stats = daily_stats  # columns: resource, date, weekday, day_start, day_end
         self.window_days = int(window_days)
@@ -62,8 +62,8 @@ class RollingStochasticAvailabilityModel:
         csv_path: str,
         resource_col: str = "org:resource",
         ts_col: str = "time:timestamp",
-        q_start: float = 0.10,
-        q_end: float = 0.90,
+        q_start: float = 0.05,
+        q_end: float = 0.95,
     ) -> "RollingStochasticAvailabilityModel":
         df = pd.read_csv(csv_path, usecols=[resource_col, ts_col]).dropna()
         df[ts_col] = pd.to_datetime(df[ts_col], errors="coerce")
@@ -91,7 +91,7 @@ class RollingStochasticAvailabilityModel:
         )
 
         # filter out ultra sparse days
-        daily = daily[daily["n"] >= 2].copy()
+        daily = daily[daily["n"] >= 10].copy()
         daily["date"] = pd.to_datetime(daily["date"]).dt.date
 
         return RollingStochasticAvailabilityModel(
@@ -128,8 +128,10 @@ class RollingStochasticAvailabilityModel:
         sd_e = float(np.std(end_vals, ddof=1)) if len(end_vals) > 1 else 0.0
 
         # ensure some variation
-        sd_s = max(sd_s, 5.0)
-        sd_e = max(sd_e, 5.0)
+        # sd_s = max(sd_s, 5.0)
+        # sd_e = max(sd_e, 5.0)
+        sd_s = min(max(sd_s, 5.0), 60.0)  # max 1 hour
+        sd_e = min(max(sd_e, 5.0), 60.0)
 
         self.param_cache[key] = (mu_s, sd_s, mu_e, sd_e)
         return self.param_cache[key]

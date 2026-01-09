@@ -621,15 +621,15 @@ if __name__ == "__main__":
 
     # print("\n>>> Training predictor from historical data...")
     # predictor = train_predictor_from_csv(
-    #     "bpi2017filtered.csv",  # Your historical event log
+    #     "bpi2017.csv",  # Your historical event log
     #     mode="basic",
     #     context_k=2
     # )
     #
     # print("\n>>> Running simulation WITH predictor (learned probabilities)...")
     # engine_pred = run_simulation(predictor=predictor, n_cases=50, output_prefix="sim_predicted")
-
-    print("\n✅ Simulation complete!")
+    #
+    # print("\n✅ Simulation complete!")
 
 
 
