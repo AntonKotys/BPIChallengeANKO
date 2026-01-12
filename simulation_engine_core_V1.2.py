@@ -24,7 +24,7 @@ from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabili
 
 SIM_START_TIME = datetime(2016, 2, 1, 10, 0, 0)
 START_ACTIVITY = "A_Create Application"
-NUM_CASES = 100
+NUM_CASES = 1000
 MAX_EVENTS_PER_CASE = 200
 LAMBDA_RATE = 1 / 1089.18
 with open("distributions.json", "r") as f:
@@ -346,10 +346,18 @@ class SimulationEngine:
                 dur = duration_function(next_act, event.time, ctx)
 
                 # 1.7 placeholder (random resource) but needed for 1.5
-                if self.resource_pool:
-                    r = random.choice(self.resource_pool)
+                #
+                # --- NEW (Task 1.5 FIX): choose ONLY resources that worked >= min_points shifts in last window ---
+                if self.availability_model is not None:
+                    eligible = self.availability_model.eligible_resources(event.time)
+                    if eligible:
+                        r = random.choice(eligible)
+                    else:
+                        # fallback to old behavior if no eligible resources found (edge case)
+                        r = random.choice(self.resource_pool) if self.resource_pool else None
                 else:
-                    r = None
+                    # old behavior if no availability model
+                    r = random.choice(self.resource_pool) if self.resource_pool else None
 
                 # 1.5 resource availability: delay start until resource is on shift
                 planned_start = event.time               # earliest possible start (no availability)
@@ -431,8 +439,20 @@ def spawn_cases(engine_n: SimulationEngine,
     t = start_time
     for i in range(1, n_cases + 1):
         case_id = f"Case_{i}"
+
         # RANDOM CHOICE FOR NOW
-        r = random.choice(engine_n.resource_pool) if engine_n.resource_pool else None
+        #
+        # --- NEW (Task 1.5 FIX): choose ONLY resources that worked >= min_points shifts in last window ---
+        if engine_n.availability_model is not None:
+            eligible = engine_n.availability_model.eligible_resources(t)
+            if eligible:
+                r = random.choice(eligible)
+            else:
+                # fallback to old behavior if no eligible resources found (edge case)
+                r = random.choice(engine_n.resource_pool) if engine_n.resource_pool else None
+        else:
+            # old behavior if no availability model
+            r = random.choice(engine_n.resource_pool) if engine_n.resource_pool else None
 
         # --- NEW (debug for Task 1.5) ---
         planned_start = t
