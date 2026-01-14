@@ -1,0 +1,5 @@
+venv/
+.venv/
+env/
+ENV/
+bpi2017.csv

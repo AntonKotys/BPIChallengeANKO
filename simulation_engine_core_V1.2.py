@@ -163,8 +163,8 @@ class SimulationEngine:
     - logs executed events
     """
 
-    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None,  predictor: Optional[ExpertActivityPredictor] = None,
-                 availability_model : Optional[RollingStochasticAvailabilityModel] = None,  resource_pool : Optional[list] = None):
+    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None, predictor: Optional[ExpertActivityPredictor] = None,
+                 availability_model: Optional[RollingStochasticAvailabilityModel] = None, resource_pool: Optional[list] = None, permissions: Optional[dict] = None):
         self.model = process_model
         self.gateways = gateways or {}
         self.now = start_time
@@ -173,6 +173,7 @@ class SimulationEngine:
         self.case_context = {}
         self.availability_model = availability_model
         self.resource_pool = resource_pool or []
+        self.permissions = permissions or {}  # Task 1.6
         # TASK 1.4: Activity predictor for XOR branching
         self.predictor = predictor
         self.case_traces: Dict[str, List[str]] = {}  # Track trace per case# per-case context
@@ -345,9 +346,11 @@ class SimulationEngine:
             for next_act in next_activities:
                 dur = duration_function(next_act, event.time, ctx)
 
-                # 1.7 placeholder (random resource) but needed for 1.5
+                # 1.6 basic permissions: choose only resources that did this activity before
                 if self.resource_pool:
-                    r = random.choice(self.resource_pool)
+                    # 1.7 random choice
+                    # r = random.choice(self.resource_pool)
+                    r = select_resource(next_act, self.resource_pool, self.permissions)
                 else:
                     r = None
 
@@ -431,8 +434,11 @@ def spawn_cases(engine_n: SimulationEngine,
     t = start_time
     for i in range(1, n_cases + 1):
         case_id = f"Case_{i}"
-        # RANDOM CHOICE FOR NOW
-        r = random.choice(engine_n.resource_pool) if engine_n.resource_pool else None
+        # 1.7 random choice
+        # r = random.choice(engine_n.resource_pool) if engine_n.resource_pool else None
+        
+        # 1.6 basic permissions (also for first activity)
+        r = select_resource(start_activity, engine_n.resource_pool, engine_n.permissions) if engine_n.resource_pool else None
 
         # --- NEW (debug for Task 1.5) ---
         planned_start = t
@@ -533,6 +539,19 @@ def train_predictor_from_csv(
 
     return predictor
 
+# 1.6 Resource permissions
+
+def learn_resource_permissions(df: pd.DataFrame) -> dict:
+    perms = {}
+    for (act, res), _ in df.groupby(["concept:name", "org:resource"]):
+        perms.setdefault(act, set()).add(str(res))
+    return perms
+
+def select_resource(activity: str, resource_pool: list, permissions: dict):
+    allowed = permissions.get(activity, [])
+    candidates = [r for r in resource_pool if r in allowed]
+    return random.choice(candidates) if candidates else None
+
 
 # ============================================================
 # MAIN
@@ -573,8 +592,9 @@ def run_simulation(
     availability.condition_on_weekday = False
 
     # resource pool from log (simple)
-    df = pd.read_csv("bpi2017.csv", usecols=["org:resource"]).dropna()
+    df = pd.read_csv("bpi2017.csv", usecols=["concept:name", "org:resource"]).dropna()
     resource_pool = df["org:resource"].astype(str).unique().tolist()
+    permissions = learn_resource_permissions(df) #1.6
 
     # Create engine with predictor
     engine = SimulationEngine(
@@ -584,6 +604,7 @@ def run_simulation(
         predictor=predictor,  # TASK 1.4
         availability_model=availability,
         resource_pool=resource_pool,
+        permissions=permissions, #1.6
     )
 
     # 1.2: Spawn cases
