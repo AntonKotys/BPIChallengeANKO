@@ -14,8 +14,7 @@ from pm4py.objects.log.exporter.xes import exporter as xes_exporter
 # Import Task 1.4 module
 
 
-
-from task_1_4_next_activity import ExpertActivityPredictor, train_predictor_from_log
+from task_1_4_next_activity import ExpertActivityPredictor
 from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabilityModel
 
 # ============================================================
@@ -128,16 +127,16 @@ class SimEvent:
     """Single discrete event, ordered by timestamp for priority queue."""
 
     def __init__(
-        self,
-        time: datetime,
-        case_id: str,
-        activity: str,
-        resource: Optional[str] = None,
-        # --- NEW (debug for Task 1.5) ---
-        planned_start: Optional[datetime] = None,  # ready time without availability
-        actual_start: Optional[datetime] = None,   # after availability adjustment
-        delay_seconds: float = 0.0,
-        was_delayed: bool = False,
+            self,
+            time: datetime,
+            case_id: str,
+            activity: str,
+            resource: Optional[str] = None,
+            # --- NEW (debug for Task 1.5) ---
+            planned_start: Optional[datetime] = None,  # ready time without availability
+            actual_start: Optional[datetime] = None,  # after availability adjustment
+            delay_seconds: float = 0.0,
+            was_delayed: bool = False,
     ):
         self.time = time
         self.case_id = case_id
@@ -163,8 +162,10 @@ class SimulationEngine:
     - logs executed events
     """
 
-    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None, predictor: Optional[ExpertActivityPredictor] = None,
-                 availability_model: Optional[RollingStochasticAvailabilityModel] = None, resource_pool: Optional[list] = None, permissions: Optional[dict] = None):
+    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None,
+                 predictor: Optional[ExpertActivityPredictor] = None,
+                 availability_model: Optional[RollingStochasticAvailabilityModel] = None,
+                 resource_pool: Optional[list] = None, permissions: Optional[dict] = None):
         self.model = process_model
         self.gateways = gateways or {}
         self.now = start_time
@@ -179,16 +180,16 @@ class SimulationEngine:
         self.case_traces: Dict[str, List[str]] = {}  # Track trace per case# per-case context
 
     def schedule_event(
-        self,
-        time: datetime,
-        case_id: str,
-        activity: str,
-        resource: Optional[str] = None,
-        # --- NEW (debug for Task 1.5) ---
-        planned_start: Optional[datetime] = None,
-        actual_start: Optional[datetime] = None,
-        delay_seconds: float = 0.0,
-        was_delayed: bool = False,
+            self,
+            time: datetime,
+            case_id: str,
+            activity: str,
+            resource: Optional[str] = None,
+            # --- NEW (debug for Task 1.5) ---
+            planned_start: Optional[datetime] = None,
+            actual_start: Optional[datetime] = None,
+            delay_seconds: float = 0.0,
+            was_delayed: bool = False,
     ):
         heapq.heappush(
             self.event_queue,
@@ -229,7 +230,7 @@ class SimulationEngine:
         self.case_traces[case_id].append(activity)
 
     # SAIFULLA YOU MAKE YOUR MAGIC HERE
-    def route_next(self, activity: str, case_id : str) -> List[str]:
+    def route_next(self, activity: str, case_id: str) -> List[str]:
         """
         Decide which outgoing activities to schedule based on gateway semantics.
 
@@ -275,7 +276,6 @@ class SimulationEngine:
             k = random.randint(1, len(or_candidates))
             return random.sample(or_candidates, k)
 
-
         # --- XOR GATEWAY: TASK 1.4 IMPLEMENTATION ---
         if gateway_type == "xor":
             if self.predictor:
@@ -298,6 +298,26 @@ class SimulationEngine:
         # --- DEFAULT: Schedule all outgoing (sequence/parallel) ---
         return outgoing
 
+    # ---------------------------
+    # 1.7 Resource Allocation
+    # ---------------------------
+
+    def allocate_resource(self, activity: str, t: datetime) -> Optional[str]:
+        """
+       I implemented it so, so it randomly picks a resource among eligible resources at time t.
+       Returns None if no resource available.
+       """
+        # Eligible resources based on availability model
+        if self.availability_model:
+            eligible = self.availability_model.eligible_resources(t)
+            if eligible:
+                return random.choice(eligible)
+
+        # Fallback: pick any resource from the pool
+        if self.resource_pool:
+            return random.choice(self.resource_pool)
+
+        return None
 
     def run(self, duration_function):
         """
@@ -370,8 +390,11 @@ class SimulationEngine:
                     r = select_resource(next_act, self.resource_pool, self.permissions) if self.permissions else random.choice(self.resource_pool)
 
                 # 1.5 resource availability: delay start until resource is on shift
-                planned_start = event.time               # earliest possible start (no availability)
-                actual_start = planned_start             # may change if resource is off-shift
+
+                # Now I am using self.allocate_resource(next_act, event.time) for all resource picking
+                # r = self.allocate_resource(next_act, event.time)
+                planned_start = event.time  # earliest possible start (no availability)
+                actual_start = planned_start  # may change if resource is off-shift
                 delay_seconds = 0.0
                 was_delayed = False
 
@@ -689,8 +712,6 @@ if __name__ == "__main__":
     # engine_pred = run_simulation(predictor=predictor, n_cases=50, output_prefix="sim_predicted")
     #
     # print("\n✅ Simulation complete!")
-
-
 
 # if __name__ == "__main__":
 #     engine = SimulationEngine(PROCESS_MODEL, SIM_START_TIME, gateways=GATEWAYS)
