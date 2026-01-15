@@ -24,7 +24,7 @@ from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabili
 
 SIM_START_TIME = datetime(2016, 2, 1, 10, 0, 0)
 START_ACTIVITY = "A_Create Application"
-NUM_CASES = 100
+NUM_CASES = 1000
 MAX_EVENTS_PER_CASE = 200
 LAMBDA_RATE = 1 / 1089.18
 with open("distributions.json", "r") as f:
@@ -346,13 +346,28 @@ class SimulationEngine:
             for next_act in next_activities:
                 dur = duration_function(next_act, event.time, ctx)
 
-                # 1.6 basic permissions: choose only resources that did this activity before
-                if self.resource_pool:
-                    # 1.7 random choice
-                    # r = random.choice(self.resource_pool)
-                    r = select_resource(next_act, self.resource_pool, self.permissions)
-                else:
-                    r = None
+                # Resource selection: Try availability model first, then fall back to permissions
+                r = None
+                if self.availability_model is not None:
+                    # Task 1.5: Use availability model to get eligible resources
+                    eligible = self.availability_model.eligible_resources(event.time)
+                    if eligible:
+                        # Task 1.6: Filter by permissions if available
+                        if self.permissions:
+                            # allowed = self.permissions.get(next_act, [])
+                            parts = [p.strip() for p in next_act.split("&")]
+                            allowed_sets = [set(self.permissions.get(p, [])) for p in parts]
+                            allowed = set.intersection(*allowed_sets) if allowed_sets else set()
+                            candidates = [res for res in eligible if res in allowed]
+                            r = random.choice(candidates) if candidates else random.choice(eligible)
+                        else:
+                            r = random.choice(eligible)
+                    elif self.resource_pool:
+                        # Fallback if no eligible resources: use permissions
+                        r = select_resource(next_act, self.resource_pool, self.permissions) if self.permissions else random.choice(self.resource_pool)
+                elif self.resource_pool:
+                    # No availability model: use permissions (Task 1.6)
+                    r = select_resource(next_act, self.resource_pool, self.permissions) if self.permissions else random.choice(self.resource_pool)
 
                 # 1.5 resource availability: delay start until resource is on shift
                 planned_start = event.time               # earliest possible start (no availability)
@@ -434,11 +449,30 @@ def spawn_cases(engine_n: SimulationEngine,
     t = start_time
     for i in range(1, n_cases + 1):
         case_id = f"Case_{i}"
-        # 1.7 random choice
-        # r = random.choice(engine_n.resource_pool) if engine_n.resource_pool else None
-        
-        # 1.6 basic permissions (also for first activity)
-        r = select_resource(start_activity, engine_n.resource_pool, engine_n.permissions) if engine_n.resource_pool else None
+        # Resource selection: Try availability model first, then fall back to permissions
+        r = None
+        if engine_n.availability_model is not None:
+            # Task 1.5: Use availability model to get eligible resources
+            eligible = engine_n.availability_model.eligible_resources(t)
+            if eligible:
+                # Task 1.6: Filter by permissions if available
+                if engine_n.permissions:
+                    allowed = engine_n.permissions.get(start_activity, [])
+                    candidates = [res for res in eligible if res in allowed]
+                    # r = random.choice(candidates) if candidates else random.choice(eligible)
+                    if candidates:
+                        r = random.choice(candidates)
+                    else:
+                        self.permission_fallback_count = getattr(self, "permission_fallback_count", 0) + 1
+                        r = random.choice(eligible)
+                else:
+                    r = random.choice(eligible)
+            elif engine_n.resource_pool:
+                # Fallback if no eligible resources: use permissions
+                r = select_resource(start_activity, engine_n.resource_pool, engine_n.permissions) if engine_n.permissions else random.choice(engine_n.resource_pool)
+        elif engine_n.resource_pool:
+            # No availability model: use permissions (Task 1.6)
+            r = select_resource(start_activity, engine_n.resource_pool, engine_n.permissions) if engine_n.permissions else random.choice(engine_n.resource_pool)
 
         # --- NEW (debug for Task 1.5) ---
         planned_start = t
@@ -468,6 +502,7 @@ def spawn_cases(engine_n: SimulationEngine,
         inter_arrival_time = np.random.exponential(scale=1 / lambda_rate)
         inter_arrival_time = min(inter_arrival_time, MAX_INTER_ARRIVAL)
         t = t + timedelta(seconds=inter_arrival_time)
+
 
 
 # ============================================================
@@ -614,6 +649,9 @@ def run_simulation(
     # 1.1 + 1.4: Run simulation (uses predictor in route_next)
     print("[1.1] Running discrete event simulation...")
     engine.run(duration_function)
+    
+    print("[1.6] Permission fallback count:", getattr(engine, "permission_fallback_count", 0))
+
 
     # Export results
     print("[Export] Saving logs...")
