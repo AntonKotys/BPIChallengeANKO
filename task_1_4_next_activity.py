@@ -1,13 +1,12 @@
 """
-Task 1.4: Next Activity Prediction for XOR Gateways
+Task 1.4: Next Activity Prediction for XOR Gateways (Process-Model-Aware)
 
 This module implements:
-- Basic: Branching probabilities learned from event log (k-gram based)
+- Basic: Branching probabilities learned from event log, CONSTRAINED by process model
 - Advanced: ML model that takes trace history into account
 
-Integration with simulation_engine_core.py:
-- The ExpertActivityPredictor is used in route_next() for XOR gateways
-- Instead of random.choice(), we sample based on learned probabilities
+Key improvement: During training, only learns transitions that are VALID according
+to the provided process model. This ensures no "impossible" transitions are predicted.
 """
 
 import json
@@ -23,17 +22,20 @@ from sklearn.model_selection import GroupShuffleSplit
 
 
 # ============================================================
-# EXPERT ACTIVITY PREDICTOR CLASS
+# EXPERT ACTIVITY PREDICTOR CLASS (Process-Model-Aware)
 # ============================================================
 
 class ExpertActivityPredictor:
     """
-    Task 1.4 Next Activity Predictor
+    Task 1.4 Next Activity Predictor (Process-Model-Aware)
+
+    Key feature: Learns transitions ONLY for valid process model edges.
+    This prevents predicting activities that cannot follow the current activity.
 
     Basic mode:
-        - Learns P(next | preceding k activities) from event log
+        - Learns P(next | current_activity, preceding k activities) from event log
         - At XOR gateways, samples next activity based on learned probabilities
-        - Falls back to shorter contexts if k-gram not seen
+        - ONLY considers transitions that are valid per process model
 
     Advanced mode:
         - Uses ML model (GradientBoosting) with contextual features
@@ -41,13 +43,15 @@ class ExpertActivityPredictor:
     """
 
     def __init__(
-            self,
-            mode: str = "basic",
-            window_size: int = 5,
-            basic_context_k: int = 2,
-            smoothing_alpha: float = 1.0,
-            min_probability: float = 0.0,
-            random_state: int = 42,
+        self,
+        mode: str = "basic",
+        window_size: int = 5,
+        basic_context_k: int = 2,
+        smoothing_alpha: float = 1.0,
+        min_probability: float = 0.0,
+        random_state: int = 42,
+        process_model: Optional[Dict[str, List[str]]] = None,
+        gateways: Optional[Dict[str, str]] = None,
     ):
         """
         Args:
@@ -57,6 +61,8 @@ class ExpertActivityPredictor:
             smoothing_alpha: Laplace smoothing parameter
             min_probability: Filter out activities with prob < this
             random_state: Random seed for reproducibility
+            process_model: Dict mapping activity -> list of valid successors
+            gateways: Dict mapping activity -> gateway type ('xor', 'or', etc.)
         """
         self.mode = mode
         self.window_size = int(window_size)
@@ -65,14 +71,20 @@ class ExpertActivityPredictor:
         self.min_probability = float(min_probability)
         self.rng = np.random.default_rng(random_state)
 
-        # Basic mode: k-gram transition counts and probabilities
-        # counts_by_ctx[k][ctx_tuple][next_activity] = count
+        # Process model for constraining transitions
+        self.process_model = process_model or {}
+        self.gateways = gateways or {}
+
+        # Basic mode: Per-activity transition probabilities
+        # transition_counts[current_activity][context_tuple][next_activity] = count
+        self.transition_counts: Dict[str, Dict[int, Dict[tuple, Dict[str, int]]]] = {}
+        # transition_probs[current_activity][context_tuple] = {next: prob}
+        self.transition_probs: Dict[str, Dict[int, Dict[tuple, Dict[str, float]]]] = {}
+
+        # Global fallback (without current activity)
         self.counts_by_ctx = {k: defaultdict(lambda: defaultdict(int))
                               for k in range(1, self.basic_k + 1)}
-        # probs_by_ctx[k][ctx_tuple] = {next_activity: probability}
         self.probs_by_ctx = {k: {} for k in range(1, self.basic_k + 1)}
-
-        # Global fallback probabilities
         self.global_next_counts = defaultdict(int)
         self.global_next_probs = {}
 
@@ -85,16 +97,24 @@ class ExpertActivityPredictor:
     # FIT METHODS
     # =========================================================
 
-    def fit(self, df: pd.DataFrame) -> 'ExpertActivityPredictor':
+    def fit(self, df: pd.DataFrame, process_model: Optional[Dict] = None,
+            gateways: Optional[Dict] = None) -> 'ExpertActivityPredictor':
         """
         Fit the predictor on historical event log data.
 
         Args:
             df: DataFrame with columns: case_id, activity, timestamp
+            process_model: Optional process model (overrides constructor)
+            gateways: Optional gateways (overrides constructor)
 
         Returns:
             self (for method chaining)
         """
+        if process_model is not None:
+            self.process_model = process_model
+        if gateways is not None:
+            self.gateways = gateways
+
         # Ensure proper column names
         df = self._normalize_columns(df)
         df = df.sort_values(["case_id", "timestamp"]).reset_index(drop=True)
@@ -103,8 +123,11 @@ class ExpertActivityPredictor:
         self.activity_encoder.fit(df["activity"].astype(str).unique())
         self.activities_set = set(self.activity_encoder.classes_.tolist())
 
-        # Always fit basic k-gram model
-        self._fit_basic_kgram(df)
+        # Fit basic k-gram model (process-model-aware)
+        self._fit_basic_kgram_process_aware(df)
+
+        # Also fit global fallback
+        self._fit_global_fallback(df)
 
         # Optionally fit advanced ML model
         if self.mode == "advanced":
@@ -128,21 +151,76 @@ class ExpertActivityPredictor:
 
         return df
 
-    def _fit_basic_kgram(self, df: pd.DataFrame):
+    def _fit_basic_kgram_process_aware(self, df: pd.DataFrame):
         """
-        Learn k-gram transition probabilities from the event log.
+        Learn transition probabilities that respect the process model.
 
-        For each trace, counts transitions:
-        P(next_activity | last_k_activities)
+        For each activity, learns P(next | context) ONLY for valid successors.
         """
-        # Reset counts
+        # Initialize structures
+        self.transition_counts = {}
+        self.transition_probs = {}
+
+        # Count transitions per (current_activity, context) -> next
+        for case_id, group in df.groupby("case_id", sort=False):
+            activities = group["activity"].astype(str).tolist()
+
+            if len(activities) < 2:
+                continue
+
+            for i in range(len(activities) - 1):
+                current_act = activities[i]
+                next_act = activities[i + 1]
+
+                # Check if this transition is valid in process model
+                if self.process_model:
+                    valid_successors = self.process_model.get(current_act, [])
+                    if valid_successors and next_act not in valid_successors:
+                        # Skip this transition - it's not valid per process model
+                        continue
+
+                # Initialize structure for this activity if needed
+                if current_act not in self.transition_counts:
+                    self.transition_counts[current_act] = {
+                        k: defaultdict(lambda: defaultdict(int))
+                        for k in range(1, self.basic_k + 1)
+                    }
+
+                # Count for each context length k
+                for k in range(1, self.basic_k + 1):
+                    # Context is the k activities BEFORE current (not including current)
+                    start_idx = i - k
+                    if start_idx < 0:
+                        # Use shorter context
+                        context = tuple(activities[0:i]) if i > 0 else ()
+                    else:
+                        context = tuple(activities[start_idx:i])
+
+                    if len(context) == k or (len(context) < k and len(context) == i):
+                        # Valid context
+                        self.transition_counts[current_act][k][context][next_act] += 1
+
+        # Convert counts to probabilities
+        for activity, k_dict in self.transition_counts.items():
+            self.transition_probs[activity] = {}
+
+            for k, ctx_dict in k_dict.items():
+                self.transition_probs[activity][k] = {}
+
+                for context, next_counts in ctx_dict.items():
+                    self.transition_probs[activity][k][context] = self._compute_smoothed_probs(
+                        next_counts,
+                        valid_successors=self.process_model.get(activity, [])
+                    )
+
+    def _fit_global_fallback(self, df: pd.DataFrame):
+        """Fit global fallback probabilities (legacy k-gram without current activity)."""
+        # Reset
         for k in self.counts_by_ctx:
             self.counts_by_ctx[k] = defaultdict(lambda: defaultdict(int))
             self.probs_by_ctx[k] = {}
         self.global_next_counts = defaultdict(int)
-        self.global_next_probs = {}
 
-        # Count all transitions
         for case_id, group in df.groupby("case_id", sort=False):
             activities = group["activity"].astype(str).tolist()
 
@@ -153,46 +231,55 @@ class ExpertActivityPredictor:
                 next_act = activities[i + 1]
                 self.global_next_counts[next_act] += 1
 
-                # Count for each context length k = 1, 2, ..., basic_k
                 for k in range(1, self.basic_k + 1):
                     start_idx = i - k + 1
                     if start_idx < 0:
                         continue
-
-                    # Context is the last k activities (including current)
                     context = tuple(activities[start_idx : i + 1])
                     self.counts_by_ctx[k][context][next_act] += 1
 
-        # Convert counts to probabilities with Laplace smoothing
+        # Convert to probs
         for k in range(1, self.basic_k + 1):
             for context, next_counts in self.counts_by_ctx[k].items():
                 self.probs_by_ctx[k][context] = self._compute_smoothed_probs(next_counts)
 
         self.global_next_probs = self._compute_smoothed_probs(self.global_next_counts)
 
-    def _compute_smoothed_probs(self, next_counts: Dict[str, int]) -> Dict[str, float]:
+    def _compute_smoothed_probs(self, next_counts: Dict[str, int],
+                                 valid_successors: List[str] = None) -> Dict[str, float]:
         """
         Apply Laplace smoothing to convert counts to probabilities.
-        Only smooths over activities that have been observed for this context.
+
+        If valid_successors provided, smooths over those activities.
+        Otherwise, smooths over observed activities.
         """
-        if not next_counts:
+        if not next_counts and not valid_successors:
             return {}
 
-        activities = list(next_counts.keys())
+        # Determine activities to include
+        if valid_successors:
+            activities = list(set(valid_successors))
+        else:
+            activities = list(next_counts.keys())
+
+        if not activities:
+            return {}
+
         num_activities = len(activities)
-        total = sum(next_counts.values())
+        total = sum(next_counts.get(a, 0) for a in activities)
         denominator = total + self.alpha * num_activities
 
+        if denominator <= 0:
+            # Uniform if no data
+            return {a: 1.0 / num_activities for a in activities}
+
         return {
-            act: (next_counts[act] + self.alpha) / denominator
+            act: (next_counts.get(act, 0) + self.alpha) / denominator
             for act in activities
         }
 
     def _fit_advanced_ml(self, df: pd.DataFrame):
-        """
-        Train ML model with contextual features for advanced prediction.
-        Features: activity n-gram + hour + weekday + elapsed time
-        """
+        """Train ML model with contextual features for advanced prediction."""
         df = df.copy()
         df["activity"] = df["activity"].astype(str)
         df["act_idx"] = self.activity_encoder.transform(df["activity"])
@@ -213,7 +300,6 @@ class ExpertActivityPredictor:
                 target = acts[i]
                 curr_idx = i - 1
 
-                # Build n-gram feature (padded with -1 if needed)
                 history = acts[max(0, curr_idx - self.window_size + 1) : curr_idx + 1]
                 if len(history) < self.window_size:
                     pad = np.full(self.window_size - len(history), -1)
@@ -221,7 +307,6 @@ class ExpertActivityPredictor:
                 else:
                     ngram_feat = history
 
-                # Context features
                 context_feat = [hours[curr_idx], wdays[curr_idx], elapsed[curr_idx]]
                 feature_row = np.concatenate([ngram_feat, context_feat])
 
@@ -229,18 +314,19 @@ class ExpertActivityPredictor:
                 y_all.append(target)
                 groups.append(case_id)
 
+        if not X_all:
+            return
+
         X = np.array(X_all)
         y = np.array(y_all)
         groups = np.array(groups)
 
-        # Train/validation split by case
         splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
         train_idx, val_idx = next(splitter.split(X, y, groups=groups))
 
         self.model = GradientBoostingClassifier(n_estimators=50, max_depth=3, random_state=42)
         self.model.fit(X[train_idx], y[train_idx])
 
-        # Report validation accuracy
         val_acc = self.model.score(X[val_idx], y[val_idx])
         print(f"[Advanced Model] Validation accuracy: {val_acc:.3f}")
 
@@ -249,16 +335,20 @@ class ExpertActivityPredictor:
     # =========================================================
 
     def get_next_activity_distribution(
-            self,
-            prefix_activities: List[str],
-            enabled_next: Optional[List[str]] = None
+        self,
+        prefix_activities: List[str],
+        enabled_next: Optional[List[str]] = None,
+        current_activity: Optional[str] = None,
     ) -> Dict[str, float]:
         """
         Get probability distribution over possible next activities.
 
+        PROCESS-MODEL-AWARE: Uses per-activity transition tables.
+
         Args:
             prefix_activities: List of activities executed so far in the trace
             enabled_next: If provided (XOR outgoing), restrict distribution to these
+            current_activity: The current activity (last in trace). If None, inferred from prefix.
 
         Returns:
             Dictionary mapping activity names to probabilities
@@ -268,75 +358,143 @@ class ExpertActivityPredictor:
 
         prefix_activities = [str(a) for a in prefix_activities]
 
-        # Find best matching context (longest k-gram first)
+        # Determine current activity
+        if current_activity is None:
+            current_activity = prefix_activities[-1]
+        current_activity = str(current_activity)
+
+        # Get valid successors from process model
+        if enabled_next is not None:
+            valid_next = [str(a) for a in enabled_next]
+        elif self.process_model and current_activity in self.process_model:
+            valid_next = [str(a) for a in self.process_model[current_activity]]
+        else:
+            valid_next = None  # No constraint
+
+        # Try to get distribution from per-activity table
+        if current_activity in self.transition_probs:
+            dist = self._get_dist_for_activity(current_activity, prefix_activities, valid_next)
+            if dist:
+                return dist
+
+        # Fallback to global k-gram
+        return self._get_global_fallback_dist(prefix_activities, valid_next)
+
+    def _get_dist_for_activity(
+        self,
+        current_activity: str,
+        prefix: List[str],
+        valid_next: Optional[List[str]]
+    ) -> Dict[str, float]:
+        """Get distribution from per-activity transition table."""
+        activity_probs = self.transition_probs.get(current_activity, {})
+
+        # Try different context lengths (longest first)
+        for k in range(min(self.basic_k, len(prefix) - 1), 0, -1):
+            probs_k = activity_probs.get(k, {})
+
+            # Build context (k activities before current)
+            if len(prefix) > k:
+                context = tuple(prefix[-(k+1):-1])
+            else:
+                context = tuple(prefix[:-1])
+
+            if context in probs_k:
+                dist = dict(probs_k[context])
+
+                # Filter to valid_next if provided
+                if valid_next is not None:
+                    dist = self._filter_and_smooth(dist, valid_next)
+
+                return dist
+
+        # No matching context found
+        return {}
+
+    def _get_global_fallback_dist(
+        self,
+        prefix: List[str],
+        valid_next: Optional[List[str]]
+    ) -> Dict[str, float]:
+        """Get distribution from global k-gram fallback."""
         best_counts = None
-        for k in range(min(self.basic_k, len(prefix_activities)), 0, -1):
-            context = tuple(prefix_activities[-k:])
+
+        for k in range(min(self.basic_k, len(prefix)), 0, -1):
+            context = tuple(prefix[-k:])
             counts_dict = self.counts_by_ctx[k].get(context)
             if counts_dict:
-                best_counts = dict(counts_dict)  # Copy the defaultdict
+                best_counts = dict(counts_dict)
                 break
 
-        # Fallback to global counts if no context match
         if best_counts is None:
             best_counts = dict(self.global_next_counts)
 
-        # If enabled_next provided, compute distribution over those activities only
-        if enabled_next is not None:
-            enabled_next = [str(a) for a in enabled_next]
-            if not enabled_next:
-                return {}
+        if valid_next is not None:
+            return self._filter_and_smooth(best_counts, valid_next, is_counts=True)
 
-            # Laplace smooth over enabled activities
+        return self._compute_smoothed_probs(best_counts)
+
+    def _filter_and_smooth(
+        self,
+        dist_or_counts: Dict[str, float],
+        valid_next: List[str],
+        is_counts: bool = False
+    ) -> Dict[str, float]:
+        """Filter distribution to valid activities and re-normalize with smoothing."""
+        if not valid_next:
+            return {}
+
+        valid_next = [str(a) for a in valid_next]
+
+        if is_counts:
+            # Laplace smooth over valid activities
             tmp = {}
-            for act in enabled_next:
-                count = float(best_counts.get(act, 0))
+            for act in valid_next:
+                count = float(dist_or_counts.get(act, 0))
                 tmp[act] = count + self.alpha
-
-            total = sum(tmp.values())
-            if total <= 0:
-                # Uniform distribution if no counts
-                uniform = 1.0 / len(enabled_next)
-                return {a: uniform for a in enabled_next}
-
-            dist = {a: v / total for a, v in tmp.items()}
         else:
-            # Return distribution over all observed successors
-            dist = self._compute_smoothed_probs(best_counts)
+            # Already probabilities - just filter and re-smooth
+            tmp = {}
+            for act in valid_next:
+                # Use existing prob as pseudo-count
+                p = dist_or_counts.get(act, 0.0)
+                tmp[act] = p + self.alpha
 
-        # Apply minimum probability filter
-        if dist and self.min_probability > 0.0:
-            filtered = {a: p for a, p in dist.items() if p >= self.min_probability}
-            if filtered:
-                dist = filtered
+        total = sum(tmp.values())
+        if total <= 0:
+            return {a: 1.0 / len(valid_next) for a in valid_next}
 
-        # Renormalize
-        if dist:
-            total = sum(dist.values())
-            if total > 0:
-                dist = {a: p / total for a, p in dist.items()}
-
-        return dist
+        return {a: v / total for a, v in tmp.items()}
 
     def sample_next_activity(
-            self,
-            prefix_activities: List[str],
-            enabled_next: Optional[List[str]] = None
+        self,
+        prefix_activities: List[str],
+        enabled_next: Optional[List[str]] = None,
+        current_activity: Optional[str] = None,
     ) -> Optional[str]:
         """
         Sample next activity from the probability distribution.
 
-        This is the main method called by the simulation engine at XOR gateways.
+        IMPORTANT: Always respects process model constraints.
 
         Args:
             prefix_activities: List of activities executed so far
             enabled_next: If provided, only sample from these (XOR outgoing arcs)
+            current_activity: Current activity (defaults to last in prefix)
 
         Returns:
             Sampled activity name, or None if no valid options
         """
-        dist = self.get_next_activity_distribution(prefix_activities, enabled_next)
+        dist = self.get_next_activity_distribution(
+            prefix_activities,
+            enabled_next=enabled_next,
+            current_activity=current_activity
+        )
+
         if not dist:
+            # Fallback: uniform over enabled_next
+            if enabled_next:
+                return self.rng.choice([str(a) for a in enabled_next])
             return None
 
         activities = list(dist.keys())
@@ -346,12 +504,13 @@ class ExpertActivityPredictor:
         return self.rng.choice(activities, p=probabilities)
 
     def predict_next_activity(
-            self,
-            case_prefix_activities: List[str],
-            current_timestamp=None,
-            case_start_timestamp=None,
-            enabled_next: Optional[List[str]] = None,
-            return_distribution: bool = False,
+        self,
+        case_prefix_activities: List[str],
+        current_timestamp=None,
+        case_start_timestamp=None,
+        enabled_next: Optional[List[str]] = None,
+        return_distribution: bool = False,
+        current_activity: Optional[str] = None,
     ):
         """
         Unified prediction API for both basic and advanced modes.
@@ -362,6 +521,7 @@ class ExpertActivityPredictor:
             case_start_timestamp: Case start time (for advanced mode)
             enabled_next: Allowed next activities (XOR outgoing)
             return_distribution: If True, return dict of probabilities
+            current_activity: Current activity (defaults to last in prefix)
 
         Returns:
             If return_distribution: Dict[str, float]
@@ -371,29 +531,34 @@ class ExpertActivityPredictor:
             if return_distribution:
                 return self.get_next_activity_distribution(
                     case_prefix_activities,
-                    enabled_next=enabled_next
+                    enabled_next=enabled_next,
+                    current_activity=current_activity
                 )
             return self.sample_next_activity(
                 case_prefix_activities,
-                enabled_next=enabled_next
+                enabled_next=enabled_next,
+                current_activity=current_activity
             )
 
         # Advanced mode uses ML model
         return self._predict_advanced(
             case_prefix_activities,
             current_timestamp,
-            case_start_timestamp
+            case_start_timestamp,
+            enabled_next=enabled_next
         )
 
     def _predict_advanced(
-            self,
-            prefix_activities: List[str],
-            current_timestamp=None,
-            case_start_timestamp=None
+        self,
+        prefix_activities: List[str],
+        current_timestamp=None,
+        case_start_timestamp=None,
+        enabled_next: Optional[List[str]] = None,
     ) -> Optional[str]:
         """Advanced ML-based prediction."""
         if self.model is None:
-            return None
+            # Fallback to basic
+            return self.sample_next_activity(prefix_activities, enabled_next=enabled_next)
 
         def map_to_idx(act: str) -> int:
             if act in self.activities_set:
@@ -402,14 +567,12 @@ class ExpertActivityPredictor:
 
         encoded = np.array([map_to_idx(str(a)) for a in prefix_activities], dtype=int)
 
-        # Pad or truncate to window_size
         if len(encoded) < self.window_size:
             pad = np.full(self.window_size - len(encoded), -1)
             ngram_feat = np.concatenate([pad, encoded])
         else:
             ngram_feat = encoded[-self.window_size:]
 
-        # Extract time features
         if current_timestamp is None:
             hour, wday, elapsed = 12, 2, 0.0
         else:
@@ -423,386 +586,115 @@ class ExpertActivityPredictor:
         features = np.concatenate([ngram_feat, context_feat]).reshape(1, -1)
 
         pred_idx = self.model.predict(features)[0]
-        return self.activity_encoder.inverse_transform([pred_idx])[0]
+        predicted = self.activity_encoder.inverse_transform([pred_idx])[0]
+
+        # Check if prediction is valid
+        if enabled_next and predicted not in enabled_next:
+            # Prediction invalid - fallback to basic sampling
+            return self.sample_next_activity(prefix_activities, enabled_next=enabled_next)
+
+        return predicted
 
     # =========================================================
     # SERIALIZATION METHODS
     # =========================================================
 
     def save_to_json(
-            self,
-            output_dir: str,
-            filename_prefix: str = "next_activity_probs",
-            decision_points_only: bool = True
+        self,
+        output_dir: str,
+        filename_prefix: str = "next_activity_probs",
+        decision_points_only: bool = True
     ) -> Dict[str, str]:
-        """
-        Save learned probabilities to JSON files.
-
-        Args:
-            output_dir: Directory to save files
-            filename_prefix: Prefix for output filenames
-            decision_points_only: If True, only save contexts with 2+ successors
-
-        Returns:
-            Dict of output file paths
-        """
+        """Save learned probabilities to JSON files."""
         Path(output_dir).mkdir(parents=True, exist_ok=True)
 
         def ctx_to_key(ctx: tuple) -> str:
-            return " || ".join(ctx)
+            return " || ".join(ctx) if ctx else "<empty>"
 
         outputs = {}
 
-        # Save counts
-        counts_json = {}
-        for k in range(1, self.basic_k + 1):
-            layer = {}
-            for ctx, next_counts in self.counts_by_ctx[k].items():
-                if decision_points_only and len(next_counts) < 2:
-                    continue
-                layer[ctx_to_key(ctx)] = dict(next_counts)
-            counts_json[str(k)] = layer
-
-        counts_path = Path(output_dir) / f"{filename_prefix}_counts_k{self.basic_k}.json"
-        with open(counts_path, "w", encoding="utf-8") as f:
-            json.dump(counts_json, f, ensure_ascii=False, indent=2)
-        outputs["counts"] = str(counts_path)
-
-        # Save probabilities
-        probs_json = {}
-        for k in range(1, self.basic_k + 1):
-            layer = {}
-            for ctx, next_probs in self.probs_by_ctx[k].items():
-                if decision_points_only:
-                    counts = self.counts_by_ctx[k].get(ctx, {})
-                    if len(counts) < 2:
+        # Save per-activity transition probs
+        activity_probs_json = {}
+        for activity, k_dict in self.transition_probs.items():
+            activity_probs_json[activity] = {}
+            for k, ctx_probs in k_dict.items():
+                layer = {}
+                for ctx, probs in ctx_probs.items():
+                    if decision_points_only and len(probs) < 2:
                         continue
-                layer[ctx_to_key(ctx)] = next_probs
-            probs_json[str(k)] = layer
+                    layer[ctx_to_key(ctx)] = probs
+                if layer:
+                    activity_probs_json[activity][str(k)] = layer
 
-        probs_path = Path(output_dir) / f"{filename_prefix}_probs_k{self.basic_k}.json"
+        probs_path = Path(output_dir) / f"{filename_prefix}_activity_probs.json"
         with open(probs_path, "w", encoding="utf-8") as f:
-            json.dump(probs_json, f, ensure_ascii=False, indent=2)
-        outputs["probs"] = str(probs_path)
+            json.dump(activity_probs_json, f, ensure_ascii=False, indent=2)
+        outputs["activity_probs"] = str(probs_path)
 
-        # Save global probabilities
+        # Save global probs (fallback)
         global_path = Path(output_dir) / f"{filename_prefix}_global_probs.json"
         with open(global_path, "w", encoding="utf-8") as f:
             json.dump(self.global_next_probs, f, ensure_ascii=False, indent=2)
         outputs["global_probs"] = str(global_path)
 
+        # Save process model if available
+        if self.process_model:
+            model_path = Path(output_dir) / f"{filename_prefix}_process_model.json"
+            with open(model_path, "w", encoding="utf-8") as f:
+                json.dump(self.process_model, f, ensure_ascii=False, indent=2)
+            outputs["process_model"] = str(model_path)
+
         return outputs
 
-    def load_from_json(self, counts_path: str, probs_path: str, global_path: str):
+    def load_from_json(self, activity_probs_path: str, global_path: str,
+                       process_model_path: str = None):
         """Load previously saved probabilities from JSON files."""
         def key_to_ctx(key: str) -> tuple:
+            if key == "<empty>":
+                return ()
             return tuple(key.split(" || "))
 
-        with open(counts_path, "r", encoding="utf-8") as f:
-            counts_json = json.load(f)
-
-        with open(probs_path, "r", encoding="utf-8") as f:
-            probs_json = json.load(f)
+        with open(activity_probs_path, "r", encoding="utf-8") as f:
+            activity_probs_json = json.load(f)
 
         with open(global_path, "r", encoding="utf-8") as f:
             self.global_next_probs = json.load(f)
 
-        # Reconstruct counts
-        for k_str, layer in counts_json.items():
-            k = int(k_str)
-            if k not in self.counts_by_ctx:
-                self.counts_by_ctx[k] = defaultdict(lambda: defaultdict(int))
-            for ctx_key, next_counts in layer.items():
-                ctx = key_to_ctx(ctx_key)
-                self.counts_by_ctx[k][ctx] = defaultdict(int, next_counts)
+        if process_model_path:
+            with open(process_model_path, "r", encoding="utf-8") as f:
+                self.process_model = json.load(f)
 
-        # Reconstruct probs
-        for k_str, layer in probs_json.items():
-            k = int(k_str)
-            if k not in self.probs_by_ctx:
-                self.probs_by_ctx[k] = {}
-            for ctx_key, next_probs in layer.items():
-                ctx = key_to_ctx(ctx_key)
-                self.probs_by_ctx[k][ctx] = next_probs
-
-        # Reconstruct global counts from probs (approximate)
-        self.global_next_counts = defaultdict(int)
-        for act in self.global_next_probs.keys():
-            self.global_next_counts[act] = 1  # Just mark as seen
+        # Reconstruct transition_probs
+        self.transition_probs = {}
+        for activity, k_dict in activity_probs_json.items():
+            self.transition_probs[activity] = {}
+            for k_str, ctx_probs in k_dict.items():
+                k = int(k_str)
+                self.transition_probs[activity][k] = {}
+                for ctx_key, probs in ctx_probs.items():
+                    ctx = key_to_ctx(ctx_key)
+                    self.transition_probs[activity][k][ctx] = probs
 
 
 # ============================================================
-# INTEGRATION WITH SIMULATION ENGINE
-# ============================================================
-
-def create_predictor_aware_route_function(
-        predictor: ExpertActivityPredictor,
-        process_model: dict,
-        gateways: dict,
-        case_traces: dict,
-):
-    """
-    Create a route_next function that uses the predictor for XOR gateways.
-
-    This function is meant to replace the random route_next in SimulationEngine.
-
-    Args:
-        predictor: Trained ExpertActivityPredictor
-        process_model: Dict mapping activity -> list of outgoing activities
-        gateways: Dict mapping activity -> gateway type ('xor', 'or', etc.)
-        case_traces: Dict[case_id -> list of executed activities] (mutable, updated during sim)
-
-    Returns:
-        A route_next function compatible with SimulationEngine
-    """
-    import random
-
-    def route_next_with_predictor(activity: str, case_id: str) -> List[str]:
-        """
-        Decide next activities using learned probabilities for XOR gateways.
-        """
-        outgoing = process_model.get(activity, [])
-        if not outgoing:
-            return []
-
-        gateway_type = gateways.get(activity)
-
-        # Get trace history for this case
-        trace = case_traces.get(case_id, [])
-
-        # Special handling for OR-split with exclusive cancel option
-        if activity == "W_Call after offers & A_Complete":
-            cancel_act = "A_Cancelled & O_Cancelled"
-            or_candidates = [a for a in outgoing if a != cancel_act]
-
-            # Check if cancel should be chosen
-            if cancel_act in outgoing:
-                # Use predictor to get probability of cancel
-                dist = predictor.get_next_activity_distribution(trace, outgoing)
-                cancel_prob = dist.get(cancel_act, 0.2)
-
-                if random.random() < cancel_prob:
-                    return [cancel_act]
-
-            # Otherwise normal OR split
-            if or_candidates:
-                k = random.randint(1, len(or_candidates))
-                return random.sample(or_candidates, k)
-            return []
-
-        # XOR gateway: sample based on learned probabilities
-        if gateway_type == "xor":
-            sampled = predictor.sample_next_activity(trace, enabled_next=outgoing)
-            if sampled:
-                return [sampled]
-            # Fallback to random if predictor fails
-            return [random.choice(outgoing)]
-
-        # OR gateway: random non-empty subset
-        if gateway_type == "or":
-            k = random.randint(1, len(outgoing))
-            return random.sample(outgoing, k)
-
-        # Default: all outgoing (sequence/parallel)
-        return outgoing
-
-    return route_next_with_predictor
-
-
-# ============================================================
-# MODIFIED SIMULATION ENGINE WITH PREDICTOR
-# ============================================================
-
-class SimulationEngineWithPredictor:
-    """
-    Extended SimulationEngine that integrates ExpertActivityPredictor
-    for probability-based XOR gateway decisions.
-
-    Key additions:
-    - Tracks execution trace per case
-    - Uses predictor.sample_next_activity() at XOR gateways
-    """
-
-    import heapq
-    from datetime import datetime, timedelta
-
-    def __init__(
-            self,
-            process_model: dict,
-            start_time,
-            gateways: dict = None,
-            predictor: ExpertActivityPredictor = None
-    ):
-        self.model = process_model
-        self.gateways = gateways or {}
-        self.now = start_time
-        self.event_queue = []
-        self.log_rows = []
-        self.case_context = {}
-
-        # Task 1.4: Activity predictor and trace tracking
-        self.predictor = predictor
-        self.case_traces = {}  # case_id -> list of executed activities
-
-    def schedule_event(self, time, case_id: str, activity: str):
-        import heapq
-
-        class SimEvent:
-            def __init__(self, time, case_id, activity):
-                self.time = time
-                self.case_id = case_id
-                self.activity = activity
-            def __lt__(self, other):
-                return self.time < other.time
-
-        heapq.heappush(self.event_queue, SimEvent(time, case_id, activity))
-
-    def log_event(self, case_id: str, activity: str, timestamp):
-        self.log_rows.append({
-            "case:concept:name": case_id,
-            "concept:name": activity,
-            "time:timestamp": timestamp.isoformat()
-        })
-
-        # Track executed activities for predictor
-        if case_id not in self.case_traces:
-            self.case_traces[case_id] = []
-        self.case_traces[case_id].append(activity)
-
-    def route_next(self, activity: str, case_id: str) -> List[str]:
-        """
-        Decide which outgoing activities to schedule.
-
-        TASK 1.4: Uses predictor for XOR gateways instead of random choice.
-        """
-        import random
-
-        outgoing = self.model.get(activity, [])
-        if not outgoing:
-            return []
-
-        gateway_type = self.gateways.get(activity)
-        trace = self.case_traces.get(case_id, [])
-
-        # Special case: OR-split with exclusive cancel option
-        if activity == "W_Call after offers & A_Complete":
-            cancel_act = "A_Cancelled & O_Cancelled"
-            or_candidates = [a for a in outgoing if a != cancel_act]
-
-            if cancel_act in outgoing:
-                # Use predictor if available
-                if self.predictor:
-                    dist = self.predictor.get_next_activity_distribution(trace, outgoing)
-                    cancel_prob = dist.get(cancel_act, 0.2)
-                else:
-                    cancel_prob = 0.2
-
-                if random.random() < cancel_prob:
-                    return [cancel_act]
-
-            if or_candidates:
-                k = random.randint(1, len(or_candidates))
-                return random.sample(or_candidates, k)
-            return []
-
-        # XOR gateway: use predictor for probability-based sampling
-        if gateway_type == "xor":
-            if self.predictor:
-                # TASK 1.4 BASIC: Sample based on learned probabilities
-                sampled = self.predictor.sample_next_activity(trace, enabled_next=outgoing)
-                if sampled:
-                    return [sampled]
-            # Fallback to random
-            return [random.choice(outgoing)]
-
-        # OR gateway: random subset
-        if gateway_type == "or":
-            k = random.randint(1, len(outgoing))
-            return random.sample(outgoing, k)
-
-        # Default: all outgoing
-        return outgoing
-
-    def run(self, duration_function, max_events_per_case: int = 200):
-        """Run the simulation."""
-        import heapq
-
-        while self.event_queue:
-            event = heapq.heappop(self.event_queue)
-            self.now = event.time
-
-            ctx = self.case_context.setdefault(
-                event.case_id,
-                {"event_count": 0, "ended": False, "start_time": event.time}
-            )
-
-            if ctx["ended"]:
-                continue
-
-            self.log_event(event.case_id, event.activity, event.time)
-
-            if event.activity == "END":
-                ctx["ended"] = True
-                continue
-
-            ctx["event_count"] += 1
-
-            if ctx["event_count"] > max_events_per_case:
-                ctx["ended"] = True
-                continue
-
-            # Route to next activities (uses predictor for XOR)
-            next_activities = self.route_next(event.activity, event.case_id)
-
-            for next_act in next_activities:
-                dur = duration_function(next_act, event.time, ctx)
-                self.schedule_event(event.time + dur, event.case_id, next_act)
-
-    def export_csv(self, path: str):
-        import pandas as pd
-        df = pd.DataFrame(self.log_rows)
-        df = df.sort_values(["case:concept:name", "time:timestamp"])
-        df.to_csv(path, index=False)
-        print(f"CSV exported to {path}")
-
-    def export_xes(self, path: str):
-        import pandas as pd
-        from pm4py.objects.log.obj import EventLog, Trace, Event
-        from pm4py.objects.log.exporter.xes import exporter as xes_exporter
-
-        df = pd.DataFrame(self.log_rows)
-        df = df.sort_values(["case:concept:name", "time:timestamp"])
-
-        log = EventLog()
-        for case_id, group in df.groupby("case:concept:name"):
-            trace = Trace()
-            trace.attributes["concept:name"] = case_id
-            for _, row in group.iterrows():
-                trace.append(Event({
-                    "concept:name": row["concept:name"],
-                    "time:timestamp": pd.to_datetime(row["time:timestamp"])
-                }))
-            log.append(trace)
-
-        xes_exporter.apply(log, path)
-        print(f"XES exported to {path}")
-
-
-# ============================================================
-# UTILITY FUNCTIONS
+# HELPER FUNCTIONS
 # ============================================================
 
 def train_predictor_from_log(
-        log_df: pd.DataFrame,
-        mode: str = "basic",
-        context_k: int = 2,
-        **kwargs
+    log_df: pd.DataFrame,
+    process_model: Dict[str, List[str]] = None,
+    gateways: Dict[str, str] = None,
+    mode: str = "basic",
+    context_k: int = 2,
+    **kwargs
 ) -> ExpertActivityPredictor:
     """
     Convenience function to train a predictor from an event log DataFrame.
 
     Args:
         log_df: DataFrame with case_id/case:concept:name, activity/concept:name, timestamp
+        process_model: Dict mapping activity -> list of valid successors
+        gateways: Dict mapping activity -> gateway type
         mode: 'basic' or 'advanced'
         context_k: Context window size for k-gram (basic mode)
         **kwargs: Additional predictor parameters
@@ -813,63 +705,12 @@ def train_predictor_from_log(
     predictor = ExpertActivityPredictor(
         mode=mode,
         basic_context_k=context_k,
+        process_model=process_model,
+        gateways=gateways,
         **kwargs
     )
     predictor.fit(log_df)
     return predictor
-
-
-def evaluate_predictor(
-        predictor: ExpertActivityPredictor,
-        test_df: pd.DataFrame,
-        print_report: bool = True
-) -> dict:
-    """
-    Evaluate predictor accuracy on test data.
-
-    Args:
-        predictor: Trained ExpertActivityPredictor
-        test_df: Test DataFrame with case_id, activity, timestamp
-        print_report: Whether to print results
-
-    Returns:
-        Dict with accuracy metrics
-    """
-    test_df = predictor._normalize_columns(test_df)
-    test_df = test_df.sort_values(["case_id", "timestamp"]).reset_index(drop=True)
-
-    correct = 0
-    total = 0
-
-    for case_id, group in test_df.groupby("case_id", sort=False):
-        activities = group["activity"].astype(str).tolist()
-
-        for i in range(len(activities) - 1):
-            prefix = activities[:i+1]
-            actual_next = activities[i+1]
-
-            dist = predictor.get_next_activity_distribution(prefix)
-            if dist:
-                predicted = max(dist, key=dist.get)
-                if predicted == actual_next:
-                    correct += 1
-            total += 1
-
-    accuracy = correct / total if total > 0 else 0.0
-
-    if print_report:
-        print(f"\n{'='*40}")
-        print(f"  PREDICTOR EVALUATION")
-        print(f"{'='*40}")
-        print(f"Total predictions: {total}")
-        print(f"Correct: {correct}")
-        print(f"Accuracy: {accuracy:.2%}")
-
-    return {
-        "total": total,
-        "correct": correct,
-        "accuracy": accuracy
-    }
 
 
 # ============================================================
@@ -877,41 +718,64 @@ def evaluate_predictor(
 # ============================================================
 
 if __name__ == "__main__":
-    print("Task 1.4: Next Activity Predictor Module")
-    print("=" * 50)
+    print("Task 1.4: Next Activity Predictor (Process-Model-Aware)")
+    print("=" * 60)
 
-    # Create sample data for demonstration
+    # Define a simple process model
+    process_model = {
+        "A": ["B", "C"],  # XOR: A can go to B or C
+        "B": ["D"],       # Sequence: B -> D
+        "C": ["D"],       # Sequence: C -> D
+        "D": ["END"],
+    }
+
+    # Create sample training data
     sample_data = pd.DataFrame({
-        "case_id": ["C1"]*5 + ["C2"]*4 + ["C3"]*5,
+        "case_id": ["C1"]*4 + ["C2"]*4 + ["C3"]*4 + ["C4"]*4 + ["C5"]*4,
         "activity": [
-            "A", "B", "C", "D", "E",  # Case 1
-            "A", "B", "D", "E",       # Case 2
-            "A", "C", "D", "C", "E"   # Case 3
+            "A", "B", "D", "END",  # A->B path
+            "A", "B", "D", "END",  # A->B path
+            "A", "B", "D", "END",  # A->B path
+            "A", "C", "D", "END",  # A->C path
+            "A", "C", "D", "END",  # A->C path
         ],
-        "timestamp": pd.date_range("2024-01-01", periods=14, freq="h")
+        "timestamp": pd.date_range("2024-01-01", periods=20, freq="h")
     })
 
-    print("\nSample training data:")
-    print(sample_data)
+    print("\nTraining data: 3 cases with A->B, 2 cases with A->C")
+    print("Expected P(B|A) = 60%, P(C|A) = 40%")
 
-    # Train predictor
-    predictor = ExpertActivityPredictor(mode="basic", basic_context_k=2)
+    # Train predictor with process model
+    predictor = ExpertActivityPredictor(
+        mode="basic",
+        basic_context_k=2,
+        process_model=process_model
+    )
     predictor.fit(sample_data)
 
+    # Test prediction at activity A
+    print("\nPredicting from activity A:")
+    dist = predictor.get_next_activity_distribution(
+        ["A"],
+        enabled_next=["B", "C"],
+        current_activity="A"
+    )
+    print(f"P(next | current=A) = {dist}")
 
-    # Test prediction
-    print("\nTest predictions:")
-    test_prefix = ["A", "B"]
-    dist = predictor.get_next_activity_distribution(test_prefix)
-    print(f"P(next | {test_prefix}) = {dist}")
+    # Verify it respects process model
+    print("\nTrying to predict from A with invalid successor E:")
+    dist_invalid = predictor.get_next_activity_distribution(
+        ["A"],
+        enabled_next=["B", "C", "E"],  # E is not in process model
+        current_activity="A"
+    )
+    print(f"Distribution (E should get low/smoothed prob): {dist_invalid}")
 
-    sampled = predictor.sample_next_activity(test_prefix)
-    print(f"Sampled next activity: {sampled}")
+    # Sample multiple times
+    print("\nSampling 100 times from A:")
+    from collections import Counter
+    samples = [predictor.sample_next_activity(["A"], enabled_next=["B", "C"]) for _ in range(100)]
+    print(f"Results: {Counter(samples)}")
 
-    # With enabled_next constraint (XOR simulation)
-    enabled = ["C", "D"]
-    dist_constrained = predictor.get_next_activity_distribution(test_prefix, enabled_next=enabled)
-    print(f"\nP(next | {test_prefix}, enabled={enabled}) = {dist_constrained}")
-
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print("Module ready for integration with simulation_engine_core.py")

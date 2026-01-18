@@ -500,23 +500,23 @@ def run_simulation(
 
 if __name__ == "__main__":
     # Example 1: Run without predictor (random branching)
-    print("\n>>> Running simulation WITHOUT predictor (random)...")
-    engine_random = run_simulation(predictor=None, n_cases=NUM_CASES, output_prefix="sim_random")
+    #print("\n>>> Running simulation WITHOUT predictor (random)...")
+    #engine_random = run_simulation(predictor=None, n_cases=NUM_CASES, output_prefix="sim_random")
 
-    print("\n" + "=" * 60)
+    #print("\n" + "=" * 60)
 
-    # Example 2: If you have training data, train predictor first
-    # Uncomment the following to train from your event log:
+     # Example 2: If you have training data, train predictor first
+     # Uncomment the following to train from your event log:
 
-    # print("\n>>> Training predictor from historical data...")
-    # predictor = train_predictor_from_csv(
-    #     "bpi2017filtered.csv",  # Your historical event log
-    #     mode="basic",
-    #     context_k=2
-    # )
-    #
-    # print("\n>>> Running simulation WITH predictor (learned probabilities)...")
-    # engine_pred = run_simulation(predictor=predictor, n_cases=50, output_prefix="sim_predicted")
+    print("\n>>> Training predictor from historical data...")
+    predictor = train_predictor_from_csv(
+        "bpi2017filtered.csv",  # Your historical event log
+        mode="basic",
+         context_k=2
+    )
+
+    print("\n>>> Running simulation WITH predictor (learned probabilities)...")
+    engine_pred = run_simulation(predictor=predictor, n_cases=50, output_prefix="sim_predicted")
 
     print("\n✅ Simulation complete!")
 
