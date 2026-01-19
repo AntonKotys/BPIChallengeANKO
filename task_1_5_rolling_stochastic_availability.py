@@ -36,7 +36,7 @@ class RollingStochasticAvailabilityModel:
         self,
         daily_stats: pd.DataFrame,
         window_days: int = 28,
-        min_points: int = 7,
+        min_points: int = 5,
         q_start: float = 0.10,
         q_end: float = 0.90,
         min_shift_minutes: int = 244,
@@ -164,8 +164,8 @@ class RollingStochasticAvailabilityModel:
         sd_e = float(np.std(end_vals, ddof=1)) if len(end_vals) > 1 else 5.0
 
         # cap variation to avoid insane windows
-        sd_s = min(max(sd_s, 5.0), 60.0)
-        sd_e = min(max(sd_e, 5.0), 60.0)
+        sd_s = min(max(sd_s, 5.0), 30.0)
+        sd_e = min(max(sd_e, 5.0), 30.0)
 
         self.param_cache[key] = (mu_s, sd_s, mu_e, sd_e)
         return self.param_cache[key]

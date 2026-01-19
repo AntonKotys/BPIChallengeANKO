@@ -133,6 +133,7 @@ PROCESS_MODEL = {
         "O_Create Offer & O_Created",
         "A_Cancelled & O_Cancelled"
     ],
+    # ???????????
     # VALIDATION LOOP - This is where most cases go through multiple times
     "W_Validate application & A_Validating": [
         "O_Returned",  # After validation, decision is made
@@ -152,6 +153,7 @@ PROCESS_MODEL = {
         "W_Validate application & A_Validating",  # 46.2% - continues validation
         "END"  # 0.6%
     ],
+    # ???????????/
     "A_Cancelled & O_Cancelled": [
         "END"
     ]
@@ -291,7 +293,7 @@ class SimulationEngine:
                     return [sampled]
             return [random.choice(outgoing)]
 
-        # OR GATEWAY - pick one
+        # OR GATEWAY - pick one ????????
         if gateway_type == "or":
             if self.predictor:
                 sampled = self.predictor.sample_next_activity(
@@ -583,7 +585,7 @@ def run_simulation(
 
     availability = RollingStochasticAvailabilityModel.fit_from_csv(historical_csv)
     availability.window_days = 28
-    availability.min_points = 4
+    availability.min_points = 5
     availability.condition_on_weekday = False
 
     df = pd.read_csv(historical_csv, usecols=["concept:name", "org:resource"]).dropna()
