@@ -39,7 +39,7 @@ class RollingStochasticAvailabilityModel:
         min_points: int = 7,
         q_start: float = 0.10,
         q_end: float = 0.90,
-        min_shift_minutes: int = 272,
+        min_shift_minutes: int = 244,
         random_seed: int = 43,
     ):
         self.daily_stats = daily_stats  # columns: resource, date, weekday, day_start, day_end
