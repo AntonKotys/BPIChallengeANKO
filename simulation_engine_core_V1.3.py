@@ -30,7 +30,7 @@ from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabili
 
 SIM_START_TIME = datetime(2016, 2, 1, 10, 0, 0)
 START_ACTIVITY = "A_Create Application"
-NUM_CASES = 1000
+NUM_CASES = 100
 MAX_EVENTS_PER_CASE = 200
 LAMBDA_RATE = 1 / 1089.18
 

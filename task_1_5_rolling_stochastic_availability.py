@@ -156,8 +156,10 @@ class RollingStochasticAvailabilityModel:
         start_vals = g["day_start"].to_numpy(dtype=float)
         end_vals = g["day_end"].to_numpy(dtype=float)
 
-        mu_s = float(np.mean(start_vals))
-        mu_e = float(np.mean(end_vals))
+        # mu_s = float(np.mean(start_vals))
+        # mu_e = float(np.mean(end_vals))
+        mu_s = float(np.quantile(start_vals, self.q_start))
+        mu_e = float(np.quantile(end_vals, self.q_end))
         sd_s = float(np.std(start_vals, ddof=1)) if len(start_vals) > 1 else 5.0
         sd_e = float(np.std(end_vals, ddof=1)) if len(end_vals) > 1 else 5.0
 
