@@ -36,10 +36,10 @@ class RollingStochasticAvailabilityModel:
         self,
         daily_stats: pd.DataFrame,
         window_days: int = 28,
-        min_points: int = 4,
+        min_points: int = 5,
         q_start: float = 0.10,
         q_end: float = 0.90,
-        min_shift_minutes: int = 240,
+        min_shift_minutes: int = 244,
         random_seed: int = 43,
     ):
         self.daily_stats = daily_stats  # columns: resource, date, weekday, day_start, day_end
@@ -156,14 +156,16 @@ class RollingStochasticAvailabilityModel:
         start_vals = g["day_start"].to_numpy(dtype=float)
         end_vals = g["day_end"].to_numpy(dtype=float)
 
-        mu_s = float(np.mean(start_vals))
-        mu_e = float(np.mean(end_vals))
+        # mu_s = float(np.mean(start_vals))
+        # mu_e = float(np.mean(end_vals))
+        mu_s = float(np.quantile(start_vals, self.q_start))
+        mu_e = float(np.quantile(end_vals, self.q_end))
         sd_s = float(np.std(start_vals, ddof=1)) if len(start_vals) > 1 else 5.0
         sd_e = float(np.std(end_vals, ddof=1)) if len(end_vals) > 1 else 5.0
 
         # cap variation to avoid insane windows
-        sd_s = min(max(sd_s, 5.0), 60.0)
-        sd_e = min(max(sd_e, 5.0), 60.0)
+        sd_s = min(max(sd_s, 5.0), 30.0)
+        sd_e = min(max(sd_e, 5.0), 30.0)
 
         self.param_cache[key] = (mu_s, sd_s, mu_e, sd_e)
         return self.param_cache[key]
