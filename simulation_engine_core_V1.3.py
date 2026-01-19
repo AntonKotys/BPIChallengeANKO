@@ -1,31 +1,15 @@
 """
-Simulation Engine Core V2.0 - Complete Pipeline
+Simulation Engine Core V1.6 - Improved Predictor Accuracy
 
-This simulation engine integrates:
-- Task 1.1: Discrete Event Simulation Core
-- Task 1.2: Instance Spawn Rates (Poisson arrivals)
-- Task 1.3: Processing Times (fitted distributions)
-- Task 1.4: Next Activity Prediction (k-gram for XOR gateways)
-- Task 1.5: Rolling Stochastic Availability (optional)
-- Task 1.6: Resource Permissions
-
-FEATURES:
-- Runs BOTH trained predictor and random simulations
-- Properly handles OR gateways with parallel branches
-- Generates comparison report against historical data
-- Runs verification tests
-
-USAGE:
-    python simulation_engine_core_V2.py [n_cases]
-
-    Example: python simulation_engine_core_V2.py 100
+FIXES from V1.5:
+1. Reduced Laplace smoothing to avoid inflating rare/unseen transitions
+2. Fixed process model to ensure validation loop is reachable
+3. Better handling of 100%/0% splits in historical data
 """
 
 import heapq
 from datetime import datetime
-from typing import Optional, List, Dict, Set
-import os
-import sys
+from typing import Optional, List, Dict
 
 import pandas as pd
 import json
@@ -37,16 +21,9 @@ from scipy.stats import lognorm, gamma, weibull_min
 from pm4py.objects.log.obj import EventLog, Trace, Event
 from pm4py.objects.log.exporter.xes import exporter as xes_exporter
 
-# Import Task 1.4 module
 from task_1_4_next_activity import ExpertActivityPredictor
+from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabilityModel
 
-# Try to import Task 1.5 (may not be available)
-try:
-    from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabilityModel
-    HAS_AVAILABILITY = True
-except ImportError:
-    RollingStochasticAvailabilityModel = None
-    HAS_AVAILABILITY = False
 
 # ============================================================
 # CONFIGURATION
@@ -58,12 +35,8 @@ NUM_CASES = 100
 MAX_EVENTS_PER_CASE = 200
 LAMBDA_RATE = 1 / 1089.18
 
-# Load distribution data (with fallback)
-try:
-    with open("distributions.json", "r") as f:
-        DIST_DATA = json.load(f)
-except FileNotFoundError:
-    DIST_DATA = {}
+with open("distributions.json", "r") as f:
+    DIST_DATA = json.load(f)
 
 DIST_MAP = {
     "lognorm": lognorm,
@@ -72,197 +45,206 @@ DIST_MAP = {
 }
 
 # ============================================================
-# PROCESS MODEL (ORIGINAL - defines valid transitions)
+# ACTIVITY MAPPING: Historical → Simulation
+# ============================================================
+
+ACTIVITY_MAPPING = {
+    # Direct matches
+    "A_Create Application": "A_Create Application",
+    "A_Submitted": "A_Submitted",
+    "W_Handle leads": "W_Handle leads",
+    "O_Returned": "O_Returned",
+    "O_Sent (mail and online)": "O_Sent (mail and online)",
+    "O_Sent (online only)": "O_Sent (mail and online)",
+    "A_Accepted": "A_Accepted",
+    "A_Incomplete": "A_Incomplete",
+    "A_Validating": "A_Validating",
+
+    # Combined activities
+    "W_Complete application": "W_Complete application & A_Concept",
+    "A_Concept": "W_Complete application & A_Concept",
+    "O_Create Offer": "O_Create Offer & O_Created",
+    "O_Created": "O_Create Offer & O_Created",
+    "W_Call after offers": "W_Call after offers & A_Complete",
+    "A_Complete": "W_Call after offers & A_Complete",
+    "W_Validate application": "W_Validate application & A_Validating",
+    "A_Cancelled": "A_Cancelled & O_Cancelled",
+    "O_Cancelled": "A_Cancelled & O_Cancelled",
+
+    # End states
+    "A_Denied": "END",
+    "O_Refused": "END",
+    "O_Accepted": "END",
+
+    # Incomplete handling -> goes to validation
+    "W_Call incomplete files": "W_Validate application & A_Validating",
+
+    # Other
+    "A_Pending": "A_Pending",
+    "W_Assess potential fraud": "W_Assess potential fraud",
+    "W_Personal Loan collection": "W_Personal Loan collection",
+    "W_Shortened completion ": "W_Shortened completion",
+}
+
+
+def map_activity(activity: str) -> str:
+    return ACTIVITY_MAPPING.get(activity, activity)
+
+
+def map_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    if 'activity' in df.columns:
+        df['activity'] = df['activity'].apply(map_activity)
+    if 'concept:name' in df.columns:
+        df['concept:name'] = df['concept:name'].apply(map_activity)
+    return df
+
+
+# ============================================================
+# PROCESS MODEL - Fixed to match actual flow
 # ============================================================
 
 PROCESS_MODEL = {
-    # --- Start ---
     "A_Create Application": [
         "A_Submitted",
         "W_Complete application & A_Concept"
     ],
-
     "A_Submitted": [
         "W_Handle leads",
-        "W_Complete application & A_Concept"
+        "W_Complete application & A_Concept"  # Rare but possible
     ],
-
     "W_Handle leads": [
         "W_Complete application & A_Concept"
     ],
-
     "W_Complete application & A_Concept": [
         "A_Accepted"
     ],
-
     "A_Accepted": [
         "O_Create Offer & O_Created"
     ],
-
     "O_Create Offer & O_Created": [
         "O_Sent (mail and online)"
     ],
-
     "O_Sent (mail and online)": [
         "W_Call after offers & A_Complete",
+        "O_Create Offer & O_Created"
     ],
-
-    # OR gateway - can spawn multiple parallel branches
     "W_Call after offers & A_Complete": [
         "W_Validate application & A_Validating",
         "O_Create Offer & O_Created",
         "A_Cancelled & O_Cancelled"
     ],
-
-    # --- Validation Loop ---
+    # ???????????
+    # VALIDATION LOOP - This is where most cases go through multiple times
     "W_Validate application & A_Validating": [
-        "O_Returned"
+        "O_Returned",  # After validation, decision is made
+        "A_Incomplete",  # Can also go to incomplete
+        "A_Validating",  # Internal validation step
     ],
-
     "O_Returned": [
-        "A_Incomplete",
-        "END"
+        "W_Validate application & A_Validating",  # 97.7% - revalidation
+        "END"  # 2.2% - case ends (accepted/denied)
     ],
-
     "A_Incomplete": [
-        "A_Validating",
-        "END"
+        "W_Validate application & A_Validating",  # 96.6% - back to validation
+        "END"  # Rare
     ],
-
     "A_Validating": [
-        "A_Incomplete",
-        "END"
+        "O_Returned",  # 53.2% - goes to returned
+        "W_Validate application & A_Validating",  # 46.2% - continues validation
+        "END"  # 0.6%
     ],
-
+    # ???????????/
     "A_Cancelled & O_Cancelled": [
         "END"
     ]
 }
 
-# ============================================================
-# GATEWAY SEMANTICS
-# ============================================================
-
 GATEWAYS = {
-    # XOR-splits (choose exactly 1 outgoing)
     "A_Create Application": "xor",
     "A_Submitted": "xor",
     "O_Returned": "xor",
     "A_Incomplete": "xor",
     "A_Validating": "xor",
-
-    # Inclusive OR-split (choose random non-empty subset - PARALLEL)
+    "W_Validate application & A_Validating": "xor",  # Added!
     "W_Call after offers & A_Complete": "or",
+    "O_Sent (mail and online)": "or",
 }
-
-
-# ============================================================
-# SIMULATION EVENT
-# ============================================================
-
-class SimEvent:
-    """Single discrete event, ordered by timestamp for priority queue."""
-
-    def __init__(
-            self,
-            time: datetime,
-            case_id: str,
-            activity: str,
-            branch_id: Optional[int] = None,
-            resource: Optional[str] = None,
-    ):
-        self.time = time
-        self.case_id = case_id
-        self.activity = activity
-        self.branch_id = branch_id
-        self.resource = resource
-
-    def __lt__(self, other):
-        return self.time < other.time
 
 
 # ============================================================
 # SIMULATION ENGINE
 # ============================================================
 
+class SimEvent:
+    def __init__(self, time: datetime, case_id: str, activity: str,
+                 resource: Optional[str] = None,
+                 planned_start: Optional[datetime] = None,
+                 actual_start: Optional[datetime] = None,
+                 delay_seconds: float = 0.0,
+                 was_delayed: bool = False):
+        self.time = time
+        self.case_id = case_id
+        self.activity = activity
+        self.resource = resource
+        self.planned_start = planned_start
+        self.actual_start = actual_start
+        self.delay_seconds = delay_seconds
+        self.was_delayed = was_delayed
+
+    def __lt__(self, other):
+        return self.time < other.time
+
+
 class SimulationEngine:
-    """
-    Discrete Event Simulation Engine with Task 1.4 Integration.
-
-    TASK 1.4 KEY FEATURE:
-    - For XOR gateways, uses ExpertActivityPredictor to sample next activity
-    - Predictor uses TRACE HISTORY for k-gram context
-    - Predictor ONLY returns valid outgoing activities
-
-    OR GATEWAY HANDLING:
-    - OR gateways can spawn multiple parallel branches
-    - Each branch executes independently
-    """
-
-    def __init__(
-        self,
-        process_model: dict,
-        start_time: datetime,
-        gateways: Optional[dict] = None,
-        predictor: Optional[ExpertActivityPredictor] = None,
-        resource_pool: Optional[list] = None,
-        permissions: Optional[dict] = None
-    ):
+    def __init__(self, process_model: dict, start_time: datetime, gateways: Optional[dict] = None,
+                 predictor: Optional[ExpertActivityPredictor] = None,
+                 availability_model: Optional[RollingStochasticAvailabilityModel] = None,
+                 resource_pool: Optional[list] = None, permissions: Optional[dict] = None):
         self.model = process_model
         self.gateways = gateways or {}
         self.now = start_time
         self.event_queue = []
         self.log_rows = []
         self.case_context = {}
+        self.availability_model = availability_model
         self.resource_pool = resource_pool or []
         self.permissions = permissions or {}
-
-        # TASK 1.4: Activity predictor for XOR branching
         self.predictor = predictor
-
-        # Track executed activities per case (TRACE HISTORY)
         self.case_traces: Dict[str, List[str]] = {}
-
-        # Track parallel branches per case
-        self.next_branch_id: Dict[str, int] = {}
+        self.permission_fallback_count = 0
 
     def schedule_event(self, time: datetime, case_id: str, activity: str,
-                       branch_id: Optional[int] = None, resource: Optional[str] = None):
-        heapq.heappush(self.event_queue, SimEvent(time, case_id, activity, branch_id, resource))
+                       resource: Optional[str] = None,
+                       planned_start: Optional[datetime] = None,
+                       actual_start: Optional[datetime] = None,
+                       delay_seconds: float = 0.0,
+                       was_delayed: bool = False):
+        heapq.heappush(self.event_queue, SimEvent(
+            time, case_id, activity, resource,
+            planned_start, actual_start, delay_seconds, was_delayed
+        ))
 
-    def log_event(self, case_id: str, activity: str, timestamp: datetime,
-                  branch_id: Optional[int], resource: Optional[str]):
-        """Log an executed event and update trace history."""
+    def log_event(self, case_id: str, activity: str, timestamp: datetime, resource: Optional[str],
+                  planned_start: Optional[datetime] = None,
+                  actual_start: Optional[datetime] = None,
+                  delay_seconds: float = 0.0,
+                  was_delayed: bool = False):
         self.log_rows.append({
             "case:concept:name": case_id,
             "concept:name": activity,
             "time:timestamp": timestamp.isoformat(),
-            "branch_id": branch_id,
             "org:resource": resource,
+            "planned_start": planned_start.isoformat() if planned_start else None,
+            "actual_start": actual_start.isoformat() if actual_start else None,
+            "delay_seconds": delay_seconds,
+            "was_delayed": was_delayed,
         })
-
-        # Update trace history for predictor
         if case_id not in self.case_traces:
             self.case_traces[case_id] = []
         self.case_traces[case_id].append(activity)
 
-    def _get_next_branch_id(self, case_id: str) -> int:
-        """Get next available branch ID for a case."""
-        if case_id not in self.next_branch_id:
-            self.next_branch_id[case_id] = 0
-        bid = self.next_branch_id[case_id]
-        self.next_branch_id[case_id] += 1
-        return bid
-
-    def route_next(self, activity: str, case_id: str, current_branch_id: Optional[int] = None) -> List[tuple]:
-        """
-        Decide which outgoing activities to schedule based on gateway semantics.
-
-        For XOR: Uses predictor (trained) or random (baseline)
-        For OR: Spawns parallel branches
-
-        Returns: List of (activity, branch_id) tuples
-        """
+    def route_next(self, activity: str, case_id: str) -> List[str]:
         outgoing = self.model.get(activity, [])
         if not outgoing:
             return []
@@ -270,74 +252,63 @@ class SimulationEngine:
         gateway_type = self.gateways.get(activity)
         trace = self.case_traces.get(case_id, [])
 
-        # --- SPECIAL CASE: OR-split with exclusive cancellation ---
+        # Special case: OR-split with cancellation
         if activity == "W_Call after offers & A_Complete":
             cancel_act = "A_Cancelled & O_Cancelled"
             or_candidates = [a for a in outgoing if a != cancel_act]
 
-            # Determine cancel probability
             if self.predictor:
-                dist = self.predictor.get_next_activity_distribution(trace, outgoing)
+                dist = self.predictor.get_next_activity_distribution(
+                    trace, enabled_next=outgoing, current_activity=activity
+                )
                 cancel_prob = dist.get(cancel_act, 0.2)
             else:
                 cancel_prob = 0.2
 
-            # Cancel is exclusive
             if cancel_act in outgoing and random.random() < cancel_prob:
-                return [(cancel_act, current_branch_id)]
+                return [cancel_act]
 
-            # Otherwise, OR split among remaining branches
             if not or_candidates:
                 return []
 
-            k = random.randint(1, len(or_candidates))
-            selected = random.sample(or_candidates, k)
+            if self.predictor:
+                sampled = self.predictor.sample_next_activity(
+                    prefix_activities=trace,
+                    enabled_next=or_candidates,
+                    current_activity=activity
+                )
+                if sampled and sampled in or_candidates:
+                    return [sampled]
 
-            # Each branch gets its own ID for parallel tracking
-            result = []
-            for act in selected:
-                branch_id = self._get_next_branch_id(case_id) if len(selected) > 1 else current_branch_id
-                result.append((act, branch_id))
-            return result
+            return [random.choice(or_candidates)]
 
-        # --- XOR GATEWAY: TASK 1.4 ---
+        # XOR GATEWAY
         if gateway_type == "xor":
             if self.predictor:
                 sampled = self.predictor.sample_next_activity(
                     prefix_activities=trace,
-                    enabled_next=outgoing
+                    enabled_next=outgoing,
+                    current_activity=activity
                 )
                 if sampled and sampled in outgoing:
-                    return [(sampled, current_branch_id)]
+                    return [sampled]
+            return [random.choice(outgoing)]
 
-            # Fallback to random
-            return [(random.choice(outgoing), current_branch_id)]
-
-        # --- OR GATEWAY: Random non-empty subset (parallel) ---
+        # OR GATEWAY - pick one ????????
         if gateway_type == "or":
-            k = random.randint(1, len(outgoing))
-            selected = random.sample(outgoing, k)
-            result = []
-            for act in selected:
-                branch_id = self._get_next_branch_id(case_id) if len(selected) > 1 else current_branch_id
-                result.append((act, branch_id))
-            return result
+            if self.predictor:
+                sampled = self.predictor.sample_next_activity(
+                    prefix_activities=trace,
+                    enabled_next=outgoing,
+                    current_activity=activity
+                )
+                if sampled and sampled in outgoing:
+                    return [sampled]
+            return [random.choice(outgoing)]
 
-        # --- DEFAULT: Schedule all outgoing ---
-        return [(act, current_branch_id) for act in outgoing]
-
-    def _select_resource(self, activity: str) -> Optional[str]:
-        """Select a resource for the activity."""
-        allowed = self.permissions.get(activity, set())
-        candidates = [r for r in self.resource_pool if r in allowed]
-        if candidates:
-            return random.choice(candidates)
-        if allowed:
-            return random.choice(list(allowed))
-        return None
+        return outgoing
 
     def run(self, duration_function):
-        """Run the discrete event simulation."""
         while self.event_queue:
             event = heapq.heappop(self.event_queue)
             self.now = event.time
@@ -347,29 +318,71 @@ class SimulationEngine:
             if ctx["ended"]:
                 continue
 
-            self.log_event(event.case_id, event.activity, event.time, event.branch_id, event.resource)
+            self.log_event(
+                event.case_id, event.activity, event.time, event.resource,
+                planned_start=getattr(event, "planned_start", None),
+                actual_start=getattr(event, "actual_start", None),
+                delay_seconds=getattr(event, "delay_seconds", 0.0),
+                was_delayed=getattr(event, "was_delayed", False),
+            )
 
             if event.activity == "END":
                 ctx["ended"] = True
                 continue
 
             ctx["event_count"] += 1
+
             if ctx["event_count"] > MAX_EVENTS_PER_CASE:
                 ctx["ended"] = True
                 continue
 
-            next_items = self.route_next(event.activity, event.case_id, event.branch_id)
+            next_activities = self.route_next(event.activity, event.case_id)
 
-            for next_act, branch_id in next_items:
+            for next_act in next_activities:
                 dur = duration_function(next_act, event.time, ctx)
-                r = self._select_resource(next_act)
-                self.schedule_event(event.time + dur, event.case_id, next_act, branch_id, r)
+
+                r = None
+                if self.availability_model is not None:
+                    eligible = self.availability_model.eligible_resources(event.time)
+                    if eligible:
+                        if self.permissions:
+                            parts = [p.strip() for p in next_act.split("&")]
+                            allowed_sets = [set(self.permissions.get(p, [])) for p in parts]
+                            allowed = set.intersection(*allowed_sets) if allowed_sets else set()
+                            candidates = [res for res in eligible if res in allowed]
+                            if candidates:
+                                r = random.choice(candidates)
+                            else:
+                                self.permission_fallback_count += 1
+                                r = random.choice(eligible)
+                        else:
+                            r = random.choice(eligible)
+                    elif self.resource_pool:
+                        r = select_resource(next_act, self.resource_pool, self.permissions) if self.permissions else random.choice(self.resource_pool)
+                elif self.resource_pool:
+                    r = select_resource(next_act, self.resource_pool, self.permissions) if self.permissions else random.choice(self.resource_pool)
+
+                planned_start = event.time
+                actual_start = planned_start
+                delay_seconds = 0.0
+                was_delayed = False
+
+                if r is not None and self.availability_model is not None:
+                    actual_start = self.availability_model.next_available(r, planned_start)
+                    delay_seconds = (actual_start - planned_start).total_seconds()
+                    was_delayed = delay_seconds > 0.0
+
+                self.schedule_event(
+                    actual_start + dur, event.case_id, next_act,
+                    resource=r, planned_start=planned_start, actual_start=actual_start,
+                    delay_seconds=delay_seconds, was_delayed=was_delayed
+                )
 
     def export_csv(self, path: str):
         df = pd.DataFrame(self.log_rows)
         df = df.sort_values(["case:concept:name", "time:timestamp"])
         df.to_csv(path, index=False)
-        print(f"  💾 CSV exported: {path}")
+        print(f"💾 CSV exported to {path}")
 
     def export_xes(self, path: str):
         df = pd.DataFrame(self.log_rows)
@@ -388,85 +401,108 @@ class SimulationEngine:
             log.append(trace)
 
         xes_exporter.apply(log, path)
-        print(f"  💾 XES exported: {path}")
+        print(f"💾 XES exported to {path}")
 
-    def get_stats(self) -> dict:
+    def get_prediction_stats(self) -> dict:
         return {
             "total_cases": len(self.case_traces),
             "avg_trace_length": np.mean([len(t) for t in self.case_traces.values()]) if self.case_traces else 0,
-            "predictor_mode": self.predictor.mode if self.predictor else "random"
+            "predictor_mode": self.predictor.mode if self.predictor else "none"
         }
 
 
 # ============================================================
-# CASE SPAWNING (Task 1.2)
+# SPAWN CASES
 # ============================================================
+MAX_INTER_ARRIVAL = 24 * 60 * 60
 
-MAX_INTER_ARRIVAL = 24 * 60 * 60  # 1 day max
 
-
-def spawn_cases(engine: SimulationEngine, n_cases: int, start_activity: str,
+def spawn_cases(engine_n: SimulationEngine, n_cases: int, start_activity: str,
                 start_time: datetime, lambda_rate: float):
-    """Spawn cases according to exponential inter-arrival times."""
     t = start_time
-
     for i in range(1, n_cases + 1):
         case_id = f"Case_{i}"
-        branch_id = engine._get_next_branch_id(case_id)
-        r = engine._select_resource(start_activity)
-        dur = duration_function(start_activity, t, {"event_count": 0, "ended": False})
 
-        engine.schedule_event(t + dur, case_id, start_activity, branch_id, r)
+        r = None
+        if engine_n.availability_model is not None:
+            eligible = engine_n.availability_model.eligible_resources(t)
+            if eligible:
+                if engine_n.permissions:
+                    allowed = engine_n.permissions.get(start_activity, [])
+                    candidates = [res for res in eligible if res in allowed]
+                    if candidates:
+                        r = random.choice(candidates)
+                    else:
+                        engine_n.permission_fallback_count += 1
+                        r = random.choice(eligible)
+                else:
+                    r = random.choice(eligible)
+            elif engine_n.resource_pool:
+                r = select_resource(start_activity, engine_n.resource_pool, engine_n.permissions) if engine_n.permissions else random.choice(engine_n.resource_pool)
+        elif engine_n.resource_pool:
+            r = select_resource(start_activity, engine_n.resource_pool, engine_n.permissions) if engine_n.permissions else random.choice(engine_n.resource_pool)
 
-        inter_arrival = min(np.random.exponential(scale=1 / lambda_rate), MAX_INTER_ARRIVAL)
-        t = t + timedelta(seconds=inter_arrival)
+        planned_start = t
+        actual_start = planned_start
+        delay_seconds = 0.0
+        was_delayed = False
+
+        if r and engine_n.availability_model:
+            actual_start = engine_n.availability_model.next_available(r, planned_start)
+            delay_seconds = (actual_start - planned_start).total_seconds()
+            was_delayed = delay_seconds > 0.0
+
+        dur = duration_function(start_activity, actual_start, {"event_count": 0, "ended": False})
+
+        engine_n.schedule_event(
+            actual_start + dur, case_id, start_activity,
+            resource=r, planned_start=planned_start, actual_start=actual_start,
+            delay_seconds=delay_seconds, was_delayed=was_delayed
+        )
+
+        inter_arrival_time = np.random.exponential(scale=1 / lambda_rate)
+        inter_arrival_time = min(inter_arrival_time, MAX_INTER_ARRIVAL)
+        t = t + timedelta(seconds=inter_arrival_time)
 
 
 # ============================================================
-# PROCESSING TIMES (Task 1.3)
+# DURATION FUNCTION
 # ============================================================
 
 def duration_function(activity: str, timestamp: datetime, case_context: dict) -> timedelta:
-    """Sample activity duration from fitted distributions."""
     parts = [p.strip() for p in activity.split("&")]
     total_seconds = sum(_sample_one(p) for p in parts)
     return timedelta(seconds=total_seconds)
 
 
 def _sample_one(act_name: str) -> float:
-    """Sample duration in seconds for a single activity."""
     info = DIST_DATA.get(act_name)
     if not info:
         return 60.0
-
     dist_name = info["best_dist"]
     params = info["params"]
     dist = DIST_MAP.get(dist_name)
     if dist is None:
         return 60.0
-
     sec = float(dist.rvs(*params))
-    return max(0.1, min(sec, 60 * 60 * 24 * 60))
+    sec = max(0.1, min(sec, 60 * 60 * 24 * 60))
+    return sec
 
 
 # ============================================================
-# RESOURCE PERMISSIONS (Task 1.6)
+# TRAIN PREDICTOR - WITH LOWER SMOOTHING
 # ============================================================
 
-def learn_resource_permissions(df: pd.DataFrame) -> dict:
-    """Learn which resources can perform which activities."""
-    perms = {}
-    for (act, res), _ in df.groupby(["concept:name", "org:resource"]):
-        perms.setdefault(act, set()).add(str(res))
-    return perms
-
-
-# ============================================================
-# PREDICTOR TRAINING
-# ============================================================
-
-def train_predictor_from_csv(csv_path: str, mode: str = "basic", context_k: int = 2) -> ExpertActivityPredictor:
-    """Train an ExpertActivityPredictor from a CSV event log."""
+def train_predictor_from_csv(
+        csv_path: str,
+        process_model: Dict[str, List[str]] = None,
+        gateways: Dict[str, str] = None,
+        mode: str = "basic",
+        context_k: int = 2,
+        smoothing_alpha: float = 0.01,  # REDUCED from 1.0 to 0.01
+        **kwargs
+) -> ExpertActivityPredictor:
+    """Train predictor with lower smoothing to better match historical data."""
     df = pd.read_csv(csv_path)
 
     ts_col = None
@@ -477,174 +513,186 @@ def train_predictor_from_csv(csv_path: str, mode: str = "basic", context_k: int 
     if ts_col:
         df[ts_col] = pd.to_datetime(df[ts_col], format="ISO8601", utc=True)
 
-    predictor = ExpertActivityPredictor(mode=mode, basic_context_k=context_k)
-    predictor.fit(df)
+    # Map activity names
+    print("[Task 1.4] Mapping historical activity names to simulation names...")
+    df = map_dataframe(df)
+
+    if 'concept:name' in df.columns:
+        unique_activities = df['concept:name'].unique()
+    else:
+        unique_activities = df['activity'].unique() if 'activity' in df.columns else []
+    print(f"[Task 1.4] Unique activities after mapping: {len(unique_activities)}")
+
+    # Create predictor with LOWER smoothing
+    predictor = ExpertActivityPredictor(
+        mode=mode,
+        basic_context_k=context_k,
+        process_model=process_model,
+        gateways=gateways,
+        smoothing_alpha=smoothing_alpha,  # Lower = less inflation of unseen transitions
+        **kwargs
+    )
+
+    predictor.fit(df, process_model=process_model, gateways=gateways)
+
+    print(f"[Task 1.4] Trained predictor (smoothing_alpha={smoothing_alpha})")
+    print(f"[Task 1.4] Activities with learned transitions: {len(predictor.transition_probs)}")
 
     return predictor
 
 
 # ============================================================
-# SIMULATION RUNNERS
+# RESOURCE HELPERS
 # ============================================================
 
-def run_trained_simulation(predictor: ExpertActivityPredictor, n_cases: int,
-                          resource_pool: list, permissions: dict) -> SimulationEngine:
-    """Run simulation with trained predictor."""
-    print("\n  Running simulation WITH trained predictor...")
+def learn_resource_permissions(df: pd.DataFrame) -> dict:
+    df = map_dataframe(df)
+    perms = {}
+    act_col = 'concept:name' if 'concept:name' in df.columns else 'activity'
+    res_col = 'org:resource' if 'org:resource' in df.columns else 'resource'
+
+    if act_col in df.columns and res_col in df.columns:
+        for (act, res), _ in df.groupby([act_col, res_col]):
+            perms.setdefault(act, set()).add(str(res))
+    return perms
+
+
+def select_resource(activity: str, resource_pool: list, permissions: dict):
+    allowed = permissions.get(activity, [])
+    candidates = [r for r in resource_pool if r in allowed]
+    return random.choice(candidates) if candidates else None
+
+
+# ============================================================
+# RUN SIMULATION
+# ============================================================
+
+def run_simulation(
+        predictor: Optional[ExpertActivityPredictor] = None,
+        n_cases: int = NUM_CASES,
+        output_prefix: str = "sim",
+        historical_csv: str = "bpi2017.csv"
+):
+    print("=" * 60)
+    print("  BUSINESS PROCESS SIMULATION")
+    print("=" * 60)
+
+    if predictor:
+        print(f"[Config] Using Task 1.4 predictor (mode={predictor.mode})")
+    else:
+        print("[Config] Using RANDOM branching (no predictor)")
+    print(f"[Config] Number of cases: {n_cases}")
+    print()
+
+    availability = RollingStochasticAvailabilityModel.fit_from_csv(historical_csv)
+    availability.window_days = 28
+    availability.min_points = 5
+    availability.condition_on_weekday = False
+
+    df = pd.read_csv(historical_csv, usecols=["concept:name", "org:resource"]).dropna()
+    df = map_dataframe(df)
+    resource_pool = df["org:resource"].astype(str).unique().tolist()
+    permissions = learn_resource_permissions(df)
 
     engine = SimulationEngine(
-        PROCESS_MODEL, SIM_START_TIME, gateways=GATEWAYS,
-        predictor=predictor, resource_pool=resource_pool, permissions=permissions
+        PROCESS_MODEL,
+        SIM_START_TIME,
+        gateways=GATEWAYS,
+        predictor=predictor,
+        availability_model=availability,
+        resource_pool=resource_pool,
+        permissions=permissions,
     )
 
+    print("[1.2] Spawning case arrivals...")
     spawn_cases(engine, n_cases, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
-    engine.run(duration_function)
-    engine.export_csv("sim_predicted.csv")
-    engine.export_xes("sim_predicted.xes")
 
-    stats = engine.get_stats()
-    print(f"  ✓ {stats['total_cases']} cases, avg {stats['avg_trace_length']:.1f} events/case")
+    print("[1.1] Running discrete event simulation...")
+    engine.run(duration_function)
+
+    print(f"[1.6] Permission fallback count: {engine.permission_fallback_count}")
+
+    print("[Export] Saving logs...")
+    engine.export_csv(f"{output_prefix}.csv")
+    engine.export_xes(f"{output_prefix}.xes")
+
+    stats = engine.get_prediction_stats()
+    print()
+    print(f"[Stats] Total cases simulated: {stats['total_cases']}")
+    print(f"[Stats] Average trace length: {stats['avg_trace_length']:.1f}")
+    print(f"[Stats] Predictor mode: {stats['predictor_mode']}")
 
     return engine
 
 
-def run_random_simulation(n_cases: int, resource_pool: list, permissions: dict) -> SimulationEngine:
-    """Run simulation with random branching."""
-    print("\n  Running simulation with RANDOM branching...")
-
-    engine = SimulationEngine(
-        PROCESS_MODEL, SIM_START_TIME, gateways=GATEWAYS,
-        predictor=None, resource_pool=resource_pool, permissions=permissions
-    )
-
-    spawn_cases(engine, n_cases, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
-    engine.run(duration_function)
-    engine.export_csv("sim_random.csv")
-    engine.export_xes("sim_random.xes")
-
-    stats = engine.get_stats()
-    print(f"  ✓ {stats['total_cases']} cases, avg {stats['avg_trace_length']:.1f} events/case")
-
-    return engine
-
-
 # ============================================================
-# MAIN PIPELINE
+# MAIN
 # ============================================================
-
-def run_full_pipeline(training_data_path: str = "bpi2017.csv", n_cases: int = 100,
-                     run_verification: bool = True, generate_report: bool = True):
-    """
-    Run the complete simulation pipeline:
-    1. Train predictor from historical data
-    2. Run simulation with trained predictor
-    3. Run simulation with random branching
-    4. Run verification tests
-    5. Generate comparison report
-    """
-    print("\n" + "█" * 70)
-    print("█  COMPLETE SIMULATION PIPELINE")
-    print("█" * 70)
-
-    # Load resources and permissions
-    print("\n─" * 70)
-    print("SETUP: Loading resources and permissions")
-    print("─" * 70)
-
-    resource_pool = []
-    permissions = {}
-    try:
-        df = pd.read_csv(training_data_path, usecols=["concept:name", "org:resource"]).dropna()
-        resource_pool = df["org:resource"].astype(str).unique().tolist()
-        permissions = learn_resource_permissions(df)
-        print(f"  ✓ Loaded {len(resource_pool)} resources")
-    except Exception as e:
-        print(f"  ⚠ Could not load resources: {e}")
-
-    # STEP 1: Train predictor
-    print("\n" + "─" * 70)
-    print("STEP 1: Training predictor from historical data")
-    print("─" * 70)
-
-    predictor = train_predictor_from_csv(training_data_path, mode="basic", context_k=2)
-    print(f"  ✓ Predictor trained (k-gram context, k=2)")
-    print(f"  ✓ Activities learned: {len(predictor.activities_set)}")
-
-    # STEP 2: Run trained simulation
-    print("\n" + "─" * 70)
-    print("STEP 2: Trained predictor simulation")
-    print("─" * 70)
-
-    engine_trained = run_trained_simulation(predictor, n_cases, resource_pool, permissions)
-
-    # STEP 3: Run random simulation
-    print("\n" + "─" * 70)
-    print("STEP 3: Random branching simulation")
-    print("─" * 70)
-
-    engine_random = run_random_simulation(n_cases, resource_pool, permissions)
-
-    # STEP 4: Verification
-    if run_verification:
-        print("\n" + "─" * 70)
-        print("STEP 4: Verification tests")
-        print("─" * 70)
-
-        try:
-            import verify_task_1_4
-            verify_task_1_4.main()
-        except ImportError:
-            print("  ⚠ verify_task_1_4.py not found")
-        except Exception as e:
-            print(f"  ⚠ Verification error: {e}")
-
-    # STEP 5: Generate report
-    if generate_report:
-        print("\n" + "─" * 70)
-        print("STEP 5: Generating comparison report")
-        print("─" * 70)
-
-        try:
-            from branch_comparison_report import generate_comparison_report, print_report
-
-            report = generate_comparison_report(
-                historical_path=training_data_path,
-                predicted_path="sim_predicted.csv",
-                random_path="sim_random.csv",
-                output_path="gateway_comparison_report.txt"
-            )
-            print_report(report)
-        except ImportError:
-            print("  ⚠ branch_comparison_report.py not found")
-        except Exception as e:
-            print(f"  ⚠ Report error: {e}")
-            import traceback
-            traceback.print_exc()
-
-    # Summary
-    print("\n" + "█" * 70)
-    print("█  PIPELINE COMPLETE")
-    print("█" * 70)
-    print("\n  Output files:")
-    print("    • sim_predicted.csv / .xes  - Trained predictor simulation")
-    print("    • sim_random.csv / .xes     - Random branching simulation")
-    if generate_report:
-        print("    • gateway_comparison_report.txt - Comparison analysis")
-
-    return engine_trained, engine_random
-
 
 if __name__ == "__main__":
-    n_cases = 100
-    if len(sys.argv) > 1:
-        try:
-            n_cases = int(sys.argv[1])
-        except:
-            pass
+    import os
 
-    run_full_pipeline(
-        training_data_path="bpi2017.csv",
-        n_cases=n_cases,
-        run_verification=True,
-        generate_report=True
+    HISTORICAL_CSV = "bpi2017.csv"
+    N_CASES = 100
+
+    if not os.path.exists(HISTORICAL_CSV):
+        print(f"❌ Historical data file not found: {HISTORICAL_CSV}")
+        exit(1)
+
+    print("\n" + "█" * 70)
+    print("█  TASK 1.4 SIMULATION BENCHMARK (V1.6 - Improved Accuracy)")
+    print("█" * 70)
+
+    # 1. RANDOM
+    print("\n" + "=" * 70)
+    print(">>> [1/2] Running simulation WITHOUT predictor (RANDOM branching)...")
+    print("=" * 70)
+
+    engine_random = run_simulation(
+        predictor=None,
+        n_cases=N_CASES,
+        output_prefix="sim_random",
+        historical_csv=HISTORICAL_CSV
     )
+
+    # 2. TRAINED with lower smoothing
+    print("\n" + "=" * 70)
+    print(">>> [2/2] Training predictor (LOW smoothing) and running simulation...")
+    print("=" * 70)
+
+    print("\n>>> Training predictor with reduced Laplace smoothing...")
+    predictor = train_predictor_from_csv(
+        HISTORICAL_CSV,
+        process_model=PROCESS_MODEL,
+        gateways=GATEWAYS,
+        mode="basic",
+        context_k=2,
+        smoothing_alpha=0.01  # Much lower than default 1.0
+    )
+
+    print("\n>>> Running simulation WITH predictor...")
+    engine_trained = run_simulation(
+        predictor=predictor,
+        n_cases=N_CASES,
+        output_prefix="sim_predicted",
+        historical_csv=HISTORICAL_CSV
+    )
+
+    # 3. Metrics
+    print("\n" + "=" * 70)
+    print(">>> Running performance metrics comparison...")
+    print("=" * 70)
+
+    try:
+        from task_1_4_metrics import compare_simulations
+        compare_simulations("sim_random.csv", "sim_predicted.csv", HISTORICAL_CSV)
+    except ImportError:
+        print("\n⚠️  task_1_4_metrics.py not found.")
+    except Exception as e:
+        print(f"\n⚠️  Error: {e}")
+        import traceback
+        traceback.print_exc()
+
+    print("\n" + "█" * 70)
+    print("█  SIMULATION COMPLETE!")
+    print("█" * 70)
