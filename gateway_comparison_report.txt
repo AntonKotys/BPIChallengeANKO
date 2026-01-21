@@ -1,0 +1,120 @@
+================================================================================
+  GATEWAY BRANCH COMPARISON REPORT
+================================================================================
+
+Generated: 2026-01-19T23:11:00.260445
+
+Case counts:
+  Historical: 31509
+  Predicted:  100
+  Random:     100
+
+--------------------------------------------------------------------------------
+  EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+
+Total deviation from historical:
+  Trained Predictor: 400.0%
+  Random Simulation: 591.1%
+
+  ✓ Predictor is 32.3% closer to historical than random
+
+================================================================================
+  DETAILED GATEWAY ANALYSIS
+================================================================================
+
+────────────────────────────────────────────────────────────────────────────────
+  A_Create Application
+  Type: XOR Gateway
+────────────────────────────────────────────────────────────────────────────────
+
+  Branch                                         Hist    Train   Random
+  ------------------------------------------------------------------
+  A_Submitted                                  100.0%   100.0%    47.0% ✓
+  W_Complete application & A_Concept             0.0%     0.0%    53.0% ✓
+
+  Deviation from historical:
+    Trained: 0.0%
+    Random:  106.0%
+    → Trained is better by 106.0%
+
+────────────────────────────────────────────────────────────────────────────────
+  A_Submitted
+  Type: XOR Gateway
+────────────────────────────────────────────────────────────────────────────────
+
+  Branch                                         Hist    Train   Random
+  ------------------------------------------------------------------
+  W_Handle leads                               100.0%   100.0%    57.4% ✓
+  W_Complete application & A_Concept             0.0%     0.0%    42.6% ✓
+
+  Deviation from historical:
+    Trained: 0.0%
+    Random:  85.1%
+    → Trained is better by 85.1%
+
+────────────────────────────────────────────────────────────────────────────────
+  O_Returned
+  Type: XOR Gateway
+────────────────────────────────────────────────────────────────────────────────
+
+  Branch                                         Hist    Train   Random
+  ------------------------------------------------------------------
+  A_Incomplete                                   0.0%    52.2%    53.2% ✓
+  END                                            0.0%    47.8%    46.8%
+
+  Deviation from historical:
+    Trained: 100.0%
+    Random:  100.0%
+
+────────────────────────────────────────────────────────────────────────────────
+  A_Incomplete
+  Type: XOR Gateway
+────────────────────────────────────────────────────────────────────────────────
+
+  Branch                                         Hist    Train   Random
+  ------------------------------------------------------------------
+  A_Validating                                   0.0%    58.8%    58.9% ✓
+  END                                            0.0%    41.2%    41.1%
+
+  Deviation from historical:
+    Trained: 100.0%
+    Random:  100.0%
+
+────────────────────────────────────────────────────────────────────────────────
+  A_Validating
+  Type: XOR Gateway
+────────────────────────────────────────────────────────────────────────────────
+
+  Branch                                         Hist    Train   Random
+  ------------------------------------------------------------------
+  A_Incomplete                                   0.0%    45.0%    50.0% ✓
+  END                                            0.0%    55.0%    50.0%
+
+  Deviation from historical:
+    Trained: 100.0%
+    Random:  100.0%
+
+────────────────────────────────────────────────────────────────────────────────
+  W_Call after offers & A_Complete
+  Type: OR Gateway
+────────────────────────────────────────────────────────────────────────────────
+
+  Branch                                         Hist    Train   Random
+  ------------------------------------------------------------------
+  W_Validate application & A_Validating          0.0%    24.2%    32.9% ✓
+  O_Create Offer & O_Created                     0.0%    44.2%    47.0% ✓
+  A_Cancelled & O_Cancelled                      0.0%    31.5%    20.1%
+
+  Deviation from historical:
+    Trained: 100.0%
+    Random:  100.0%
+
+================================================================================
+  CONCLUSION
+================================================================================
+
+  ✓ The trained predictor produces branching distributions closer to
+    historical data than random simulation.
+
+  Key: ✓ = Trained simulation closer to historical than random
