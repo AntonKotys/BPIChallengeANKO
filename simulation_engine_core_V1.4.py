@@ -69,7 +69,7 @@ PROCESS_MODEL = {
 
     "O_Sent (mail and online)": [
         "W_Call after offers & A_Complete",
-        "O_Create Offer & O_Created"
+        # "O_Create Offer & O_Created"
     ],
 
     "W_Call after offers & A_Complete": [
@@ -115,7 +115,7 @@ GATEWAYS = {
 
     # Inclusive OR-split (choose random non-empty subset)
     "W_Call after offers & A_Complete": "or",
-    "O_Sent (mail and online)": "or",
+    # "O_Sent (mail and online)": "or",
 }
 
 
@@ -262,7 +262,7 @@ class SimulationEngine:
             # decide cancel probability
             if self.predictor:
                 dist = self.predictor.get_next_activity_distribution(trace, outgoing)
-                cancel_prob = dist.get(cancel_act, 0.2) # !!! Default 0.2 must be customized properly !!!
+                cancel_prob = dist.get(cancel_act, 0.05) # !!! Default 0.2 must be customized properly !!!
             else:
                 cancel_prob = 0.2
 
@@ -652,7 +652,7 @@ def run_simulation(
 
     # optional:
     availability.window_days = 28  # 4 weeks rolling
-    availability.min_points = 4
+    availability.min_points = 5
     availability.condition_on_weekday = False
 
     # resource pool from log (simple)
