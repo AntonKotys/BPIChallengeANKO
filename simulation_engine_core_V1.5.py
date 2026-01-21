@@ -306,7 +306,7 @@ class SimulationEngine:
             if self.predictor:
                 dist = self.predictor.get_next_activity_distribution(trace, outgoing)
                 # A_Cancelled after W_Call after offers in 8,539 cases of 191,092 occurrences in historical event log
-                # 4.47% cancellation per occurrence of W_Call after offers (Anton checked)
+                # 4.47% cancellation per occurrence of W_Call after offers
                 cancel_prob = dist.get(cancel_act, 0.047) # !!! Default 0.2 must be customized properly !!!
             else:
                 cancel_prob = 0.047
