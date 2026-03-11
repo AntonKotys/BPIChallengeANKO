@@ -56,7 +56,15 @@ class ResourceAllocatorAlgo:
         return candidate_time
 
     def assign(self, activity: str, ready_time: datetime, duration: timedelta):
+        # candidates = self.get_allowed_resources(activity)
+        # added this part to include eligibility
         candidates = self.get_allowed_resources(activity)
+
+        if self.availability_model is not None:
+            eligible = self.availability_model.eligible_resources(ready_time)
+            candidates = [r for r in candidates if r in eligible]
+
+        # added this part to include eligibility
 
         if not candidates:
             return None
