@@ -22,3 +22,5 @@ def ok(row):
 viol = sim[~sim.apply(ok, axis=1)]
 print("violations (split-aware):", len(viol))
 print(viol[["case:concept:name","concept:name","org:resource"]].head(20))
+print("violations (split-unaware):", len(sim[~sim.apply(lambda r: r["org:resource"] in perms.get(r["concept:name"], set()), axis=1)]))
+print("total:", len(sim))
