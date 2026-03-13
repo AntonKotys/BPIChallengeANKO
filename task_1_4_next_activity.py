@@ -52,6 +52,7 @@ class ExpertActivityPredictor:
         random_state: int = 42,
         process_model: Optional[Dict[str, List[str]]] = None,
         gateways: Optional[Dict[str, str]] = None,
+        use_token_replay: bool = False,
     ):
         """
         Args:
@@ -63,6 +64,8 @@ class ExpertActivityPredictor:
             random_state: Random seed for reproducibility
             process_model: Dict mapping activity -> list of valid successors
             gateways: Dict mapping activity -> gateway type ('xor', 'or', etc.)
+            use_token_replay: If True, use token-based replay to identify decision
+                points during fit() (requires bpmn_path in fit()). Default False.
         """
         self.mode = mode
         self.window_size = int(window_size)
@@ -93,12 +96,18 @@ class ExpertActivityPredictor:
         self.activities_set = set()
         self.model = None
 
+        # Token replay support (Task 1.4 Advanced)
+        self.use_token_replay = use_token_replay
+        self.token_replay_extractor = None
+        self.replay_stats = {}
+
     # =========================================================
     # FIT METHODS
     # =========================================================
 
     def fit(self, df: pd.DataFrame, process_model: Optional[Dict] = None,
-            gateways: Optional[Dict] = None) -> 'ExpertActivityPredictor':
+            gateways: Optional[Dict] = None,
+            bpmn_path: Optional[str] = None) -> 'ExpertActivityPredictor':
         """
         Fit the predictor on historical event log data.
 
@@ -106,6 +115,9 @@ class ExpertActivityPredictor:
             df: DataFrame with columns: case_id, activity, timestamp
             process_model: Optional process model (overrides constructor)
             gateways: Optional gateways (overrides constructor)
+            bpmn_path: Optional path to BPMN model file. When provided together
+                with use_token_replay=True, uses token-based replay to identify
+                decision points instead of sequential pair counting.
 
         Returns:
             self (for method chaining)
@@ -125,6 +137,12 @@ class ExpertActivityPredictor:
 
         # Fit basic k-gram model (process-model-aware)
         self._fit_basic_kgram_process_aware(df)
+
+        # Token replay: override transition counts with replay-derived data
+        # when enabled. The basic fit above runs first as a fallback baseline,
+        # then token replay replaces the counts with cleaner decision point data.
+        if self.use_token_replay and bpmn_path is not None:
+            self._fit_with_token_replay(df, bpmn_path)
 
         # Also fit global fallback
         self._fit_global_fallback(df)
@@ -244,6 +262,106 @@ class ExpertActivityPredictor:
                 self.probs_by_ctx[k][context] = self._compute_smoothed_probs(next_counts)
 
         self.global_next_probs = self._compute_smoothed_probs(self.global_next_counts)
+
+    def _fit_with_token_replay(self, df: pd.DataFrame, bpmn_path: str):
+        """
+        Use token-based replay to identify decision points and extract clean
+        training data. Overrides transition_counts and transition_probs with
+        replay-derived data while keeping the same internal data structure.
+
+        This addresses the advanced requirement:
+            "Identify the data for the decision points via token replay."
+
+        Args:
+            df: Normalized DataFrame with case_id, activity, timestamp
+            bpmn_path: Path to BPMN model file
+        """
+        from task_1_4_token_replay import TokenReplayDecisionExtractor, df_to_event_log
+
+        log = df_to_event_log(df)
+
+        extractor = TokenReplayDecisionExtractor()
+        try:
+            extractor.load_model_from_bpmn(bpmn_path)
+        except Exception as e:
+            print(f"[Token Replay] Failed to load BPMN ({e}). "
+                  f"Falling back to model discovery from log...")
+            extractor.discover_model_from_log(log)
+
+        decisions = extractor.replay_and_extract(log)
+
+        if not decisions:
+            print("[Token Replay] No decisions extracted. "
+                  "Keeping basic k-gram counts as fallback.")
+            return
+
+        self.token_replay_extractor = extractor
+        self.replay_stats = extractor.replay_stats
+
+        self._build_counts_from_replay_decisions(decisions)
+
+        stats = extractor.replay_stats
+        print(f"[Token Replay] Extracted {stats['decision_instances']} decision "
+              f"instances from {stats['fit_traces']}/{stats['total_traces']} "
+              f"fit traces")
+        print(f"[Token Replay] Found {stats['decision_places_found']} "
+              f"decision places in Petri net")
+
+    def _build_counts_from_replay_decisions(self, decisions: list):
+        """
+        Build transition_counts and transition_probs from token replay
+        decision data. Uses the same data structure as
+        _fit_basic_kgram_process_aware so all downstream prediction
+        methods work identically.
+
+        Args:
+            decisions: List of decision dicts from TokenReplayDecisionExtractor
+        """
+        self.transition_counts = {}
+
+        for d in decisions:
+            chosen = d['chosen_transition']
+            prefix = d['prefix_activities']
+
+            if not prefix:
+                continue
+
+            # Skip silent transitions (no corresponding activity label)
+            if chosen.startswith("[silent:"):
+                continue
+
+            current_act = prefix[-1]
+
+            if current_act not in self.transition_counts:
+                self.transition_counts[current_act] = {
+                    k: defaultdict(lambda: defaultdict(int))
+                    for k in range(1, self.basic_k + 1)
+                }
+
+            for k in range(1, self.basic_k + 1):
+                idx = len(prefix) - 1
+                start_idx = idx - k
+                if start_idx < 0:
+                    context = tuple(prefix[0:idx]) if idx > 0 else ()
+                else:
+                    context = tuple(prefix[start_idx:idx])
+
+                if len(context) == k or (len(context) < k and len(context) == idx):
+                    self.transition_counts[current_act][k][context][chosen] += 1
+
+        # Convert counts to probabilities (same as basic fit)
+        self.transition_probs = {}
+        for activity, k_dict in self.transition_counts.items():
+            self.transition_probs[activity] = {}
+            for k, ctx_dict in k_dict.items():
+                self.transition_probs[activity][k] = {}
+                for context, next_counts in ctx_dict.items():
+                    self.transition_probs[activity][k][context] = (
+                        self._compute_smoothed_probs(
+                            next_counts,
+                            valid_successors=self.process_model.get(activity, [])
+                        )
+                    )
 
     def _compute_smoothed_probs(self, next_counts: Dict[str, int],
                                  valid_successors: List[str] = None) -> Dict[str, float]:
