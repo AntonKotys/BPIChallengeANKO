@@ -38,6 +38,12 @@ DIST_MAP = {
     "weibull_min": weibull_min
 }
 
+# Global seed for reproducibility of random behaviour
+GLOBAL_SEED = 42
+random.seed(GLOBAL_SEED)
+np.random.seed(GLOBAL_SEED)
+print(f"[SEED] Global seed set to {GLOBAL_SEED}")
+
 # ============================================================
 # ROUTING MODEL
 # ============================================================

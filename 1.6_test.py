@@ -1,6 +1,7 @@
 import pandas as pd
 
-sim = pd.read_csv("sim_predicted_round_robin.csv").dropna(subset=["concept:name","org:resource"])
+# choose csv file to check
+sim = pd.read_csv("sim_predicted_random.csv").dropna(subset=["concept:name","org:resource"])
 hist = pd.read_csv("bpi2017.csv").dropna(subset=["concept:name","org:resource"])
 
 # normalize
@@ -24,4 +25,4 @@ print("violations (split-aware):", len(viol))
 print(viol[["case:concept:name","concept:name","org:resource"]].head(20))
 print("violations (split-unaware):", len(sim[~sim.apply(lambda r: r["org:resource"] in perms.get(r["concept:name"], set()), axis=1)]))
 print("total:", len(sim))
-print(sim[~sim.apply(lambda r: r["org:resource"] in perms.get(r["concept:name"], set()), axis=1)][["case:concept:name","concept:name","org:resource"]].head(20))
+# print(sim[~sim.apply(lambda r: r["org:resource"] in perms.get(r["concept:name"], set()), axis=1)][["case:concept:name","concept:name","org:resource"]].head(20))
