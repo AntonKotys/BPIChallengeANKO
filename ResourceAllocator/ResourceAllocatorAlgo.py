@@ -56,6 +56,25 @@ class ResourceAllocatorAlgo:
         return candidate_time
 
     def assign(self, activity: str, ready_time: datetime, duration: timedelta):
+        # W-tasks = system tasks: always available, unlimited parallelism
+        # vvv comment out this part if we do not want to consider whether assigned resource is real person or a system
+        if self.is_system_activity(activity):
+            planned_start = ready_time
+            actual_start = ready_time
+            finish_time = actual_start + duration
+
+            return {
+                "resource": "SYSTEM_W",
+                "planned_start": planned_start,
+                "actual_start": actual_start,
+                "finish_time": finish_time,
+                "delay_seconds": 0.0,
+                "was_delayed": False,
+            }
+
+        # ^^^comment out this part if we do not want to consider whether assigned resource is real person or a system
+
+
         # candidates = self.get_allowed_resources(activity)
         # added this part to include eligibility
         candidates = self.get_allowed_resources(activity)
@@ -102,3 +121,6 @@ class ResourceAllocatorAlgo:
             "delay_seconds": delay_seconds,
             "was_delayed": was_delayed,
         }
+
+    def is_system_activity(self, activity: str) -> bool:
+        return activity.strip().startswith("W_")
