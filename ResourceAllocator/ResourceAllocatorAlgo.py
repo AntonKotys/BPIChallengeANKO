@@ -62,9 +62,10 @@ class ResourceAllocatorAlgo:
             planned_start = ready_time
             actual_start = ready_time
             finish_time = actual_start + duration
+            candidates = self.get_allowed_resources(activity)
 
             return {
-                "resource": "SYSTEM_W",
+                "resource": random.choice(candidates),
                 "planned_start": planned_start,
                 "actual_start": actual_start,
                 "finish_time": finish_time,
