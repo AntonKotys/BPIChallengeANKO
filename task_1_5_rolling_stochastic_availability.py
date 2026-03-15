@@ -111,7 +111,7 @@ class RollingStochasticAvailabilityModel:
 
     def eligible_resources(self, t: datetime) -> List[str]:
         """
-        Return resources that have at least `min_points` working shifts
+        Return resources that have at least `min_points` working shift
         (distinct days with activity) in the last `window_days` before time t.
 
         This prevents selecting inactive resources which would otherwise
