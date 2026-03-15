@@ -3,11 +3,17 @@ import numpy as np
 from pathlib import Path
 
 FILES = [
-    "sim_predicted_random.csv",
-    "sim_predicted_round_robin.csv",
-    "sim_predicted_earliest_available.csv",
-    "sim_predicted_k_batch.csv",
-    "sim_predicted_svfa.csv",
+    "sim_outputs/sim_predicted_random_advanced_roles.csv",
+    "sim_outputs/sim_predicted_round_robin_advanced_roles.csv",
+    "sim_outputs/sim_predicted_earliest_available_advanced_roles.csv",
+    "sim_outputs/sim_predicted_k_batch_advanced_roles.csv",
+    "sim_outputs/sim_predicted_svfa_advanced_roles.csv",
+    
+    "sim_outputs/sim_predicted_random_basic_roles.csv",
+    "sim_outputs/sim_predicted_round_robin_basic_roles.csv",
+    "sim_outputs/sim_predicted_earliest_available_basic_roles.csv",
+    "sim_outputs/sim_predicted_k_batch_basic_roles.csv",
+    "sim_outputs/sim_predicted_svfa_basic_roles.csv",
 ]
 
 SYSTEM_RESOURCES = {"SYSTEM_W"}

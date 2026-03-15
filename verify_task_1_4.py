@@ -187,9 +187,9 @@ def test_simulation_traces():
     print("=" * 70)
 
     try:
-        df = pd.read_csv("sim_predicted.csv")
+        df = pd.read_csv("sim_outputs/sim_predicted.csv")
     except FileNotFoundError:
-        print("\n⚠️  sim_predicted.csv not found. Run simulation first.")
+        print("\n sim_predicted.csv not found. Run simulation first.")
         return None
 
     # Standardize columns

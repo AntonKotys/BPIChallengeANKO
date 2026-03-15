@@ -7,6 +7,8 @@ import json
 import numpy as np
 import random
 
+import os
+
 from sklearn.cluster import AgglomerativeClustering
 
 from datetime import timedelta
@@ -45,6 +47,9 @@ DIST_MAP = {
 }
 # Resource permissions configuration
 USE_ADVANCED_PERMISSIONS = True
+
+output_dir = "sim_outputs"
+os.makedirs(output_dir, exist_ok=True)
 
 # Global seed for reproducibility of random behaviour
 GLOBAL_SEED = 42
@@ -956,8 +961,11 @@ def run_simulation(
 
     # Export results
     print("[Export] Saving logs...")
-    engine.export_csv(f"{output_prefix}.csv")
-    engine.export_xes(f"{output_prefix}.xes")
+
+    full_output_path = os.path.join(output_dir, output_prefix)
+    
+    engine.export_csv(f"{full_output_path}.csv")
+    engine.export_xes(f"{full_output_path}.xes")
 
     # Print stats
     stats = engine.get_prediction_stats()

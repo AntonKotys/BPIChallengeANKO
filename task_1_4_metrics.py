@@ -370,8 +370,8 @@ if __name__ == "__main__":
     import sys
 
     hist = "bpi2017.csv"
-    sim_r = "sim_random.csv"
-    sim_t = "sim_predicted.csv"
+    sim_r = "sim_outputs/sim_random.csv"
+    sim_t = "sim_outputs/sim_predicted.csv"
 
     if not os.path.exists(hist):
         print(f"❌ Not found: {hist}")

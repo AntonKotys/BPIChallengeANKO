@@ -285,8 +285,8 @@ if __name__ == "__main__":
     import sys
 
     hist = sys.argv[1] if len(sys.argv) > 1 else "bpi2017.csv"
-    pred = sys.argv[2] if len(sys.argv) > 2 else "sim_predicted.csv"
-    rand = sys.argv[3] if len(sys.argv) > 3 else "sim_random.csv"
+    pred = sys.argv[2] if len(sys.argv) > 2 else "sim_outputs/sim_predicted.csv"
+    rand = sys.argv[3] if len(sys.argv) > 3 else "sim_outputs/sim_random.csv"
     out = sys.argv[4] if len(sys.argv) > 4 else "gateway_comparison_report.txt"
 
     report = generate_comparison_report(hist, pred, rand, out)

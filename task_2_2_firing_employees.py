@@ -1,5 +1,5 @@
 import pandas as pd
-df = pd.read_csv("sim_predicted_earliest_available.csv")
+df = pd.read_csv("sim_outputs/sim_predicted_earliest_available.csv")
 
 human_df = df[
     (df["org:resource"] != "SYSTEM_W") &

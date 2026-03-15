@@ -3,7 +3,7 @@ import pandas as pd
 from simulation_engine_core_V1_7 import learn_advanced_resource_permissions
 
 # choose csv file to check
-sim = pd.read_csv("sim_predicted_random_advanced_roles.csv").dropna(subset=["concept:name","org:resource"])
+sim = pd.read_csv("sim_outputs/sim_predicted_random_advanced_roles.csv").dropna(subset=["concept:name","org:resource"])
 hist = pd.read_csv("bpi2017.csv").dropna(subset=["concept:name","org:resource"])
 
 # normalize
