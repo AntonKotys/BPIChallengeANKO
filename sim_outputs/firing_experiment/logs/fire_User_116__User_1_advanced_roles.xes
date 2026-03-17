@@ -1,0 +1,1803 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<log xes.version="1849-2016" xes.features="nested-attributes" xmlns="http://www.xes-standard.org/">
+	<trace>
+		<string key="concept:name" value="Case_1" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T10:00:00.117497" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T10:00:00" />
+			<string key="actual_start" value="2016-02-01T10:00:00" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T10:00:00.117497" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_10" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T12:39:38.285902" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T12:39:38.185902" />
+			<string key="actual_start" value="2016-02-01T12:39:38.185902" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T12:39:38.285902" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_100" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T13:38:55.170003" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T13:38:54.975443" />
+			<string key="actual_start" value="2016-02-02T13:38:54.975443" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T13:38:55.170003" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_11" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T12:45:53.206701" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T12:45:53.106701" />
+			<string key="actual_start" value="2016-02-01T12:45:53.106701" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T12:45:53.206701" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_12" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T12:52:09.535286" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T12:52:09.435286" />
+			<string key="actual_start" value="2016-02-01T12:52:09.435286" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T12:52:09.535286" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_13" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T13:00:27.035560" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T13:00:26.403307" />
+			<string key="actual_start" value="2016-02-01T13:00:26.403307" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T13:00:27.035560" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_14" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T13:04:29.102753" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T13:04:29.002753" />
+			<string key="actual_start" value="2016-02-01T13:04:29.002753" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T13:04:29.102753" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_15" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T13:17:35.522468" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T13:17:35.422468" />
+			<string key="actual_start" value="2016-02-01T13:17:35.422468" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T13:17:35.522468" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_16" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T13:34:34.268487" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T13:34:34.168487" />
+			<string key="actual_start" value="2016-02-01T13:34:34.168487" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T13:34:34.268487" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_17" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T13:37:57.902943" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T13:37:57.802943" />
+			<string key="actual_start" value="2016-02-01T13:37:57.802943" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T13:37:57.902943" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_18" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T13:58:53.456019" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T13:58:53.356019" />
+			<string key="actual_start" value="2016-02-01T13:58:53.356019" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T13:58:53.456019" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_19" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T14:09:25.279363" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T14:09:25.179363" />
+			<string key="actual_start" value="2016-02-01T14:09:25.179363" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T14:09:25.279363" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_2" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T10:23:54.273074" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T10:23:54.173074" />
+			<string key="actual_start" value="2016-02-01T10:23:54.173074" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T10:23:54.273074" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_20" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T14:10:03.393825" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T14:10:03.293825" />
+			<string key="actual_start" value="2016-02-01T14:10:03.293825" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T14:10:03.393825" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_21" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T14:53:37.993344" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T14:53:37.786425" />
+			<string key="actual_start" value="2016-02-01T14:53:37.786425" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T14:53:37.993344" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_22" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T15:00:24.745891" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T15:00:24.645891" />
+			<string key="actual_start" value="2016-02-01T15:00:24.645891" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T15:00:24.745891" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_23" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T15:13:44.324797" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T15:13:44.224797" />
+			<string key="actual_start" value="2016-02-01T15:13:44.224797" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T15:13:44.324797" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_24" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T16:17:08.620470" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T16:17:08.520470" />
+			<string key="actual_start" value="2016-02-01T16:17:08.520470" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T16:17:08.620470" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_25" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T16:44:14.023095" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T16:44:13.844290" />
+			<string key="actual_start" value="2016-02-01T16:44:13.844290" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T16:44:14.023095" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_26" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T16:45:54.862763" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T16:45:54.762763" />
+			<string key="actual_start" value="2016-02-01T16:45:54.762763" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T16:45:54.862763" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_27" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T16:49:52.450710" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T16:49:52.350710" />
+			<string key="actual_start" value="2016-02-01T16:49:52.350710" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T16:49:52.450710" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_28" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T16:58:48.469181" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T16:58:48.369181" />
+			<string key="actual_start" value="2016-02-01T16:58:48.369181" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T16:58:48.469181" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_29" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T17:04:33.260485" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T17:04:33.160485" />
+			<string key="actual_start" value="2016-02-01T17:04:33.160485" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T17:04:33.260485" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_3" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T10:40:28.631845" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T10:40:28.531845" />
+			<string key="actual_start" value="2016-02-01T10:40:28.531845" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T10:40:28.631845" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_30" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T17:10:32.686128" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T17:10:32.375142" />
+			<string key="actual_start" value="2016-02-01T17:10:32.375142" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T17:10:32.686128" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_31" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T17:24:44.657289" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T17:24:44.557289" />
+			<string key="actual_start" value="2016-02-01T17:24:44.557289" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T17:24:44.657289" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_32" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T17:26:09.042456" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T17:26:08.942456" />
+			<string key="actual_start" value="2016-02-01T17:26:08.942456" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T17:26:09.042456" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_33" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T18:44:49.707966" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T18:44:49.607966" />
+			<string key="actual_start" value="2016-02-01T18:44:49.607966" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T18:44:49.707966" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_34" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T18:44:55.782678" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T18:44:55.639214" />
+			<string key="actual_start" value="2016-02-01T18:44:55.639214" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T18:44:55.782678" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_35" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T19:15:36.538178" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T19:15:36.240986" />
+			<string key="actual_start" value="2016-02-01T19:15:36.240986" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T19:15:36.538178" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_36" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T19:42:23.265073" />
+			<string key="org:resource" value="User_38" />
+			<string key="planned_start" value="2016-02-01T19:42:23.015143" />
+			<string key="actual_start" value="2016-02-01T19:42:23.015143" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T19:42:23.265073" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_37" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T19:43:46.904960" />
+			<string key="org:resource" value="User_38" />
+			<string key="planned_start" value="2016-02-01T19:43:46.804960" />
+			<string key="actual_start" value="2016-02-01T19:43:46.804960" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T19:43:46.904960" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_38" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T20:19:52.771599" />
+			<string key="org:resource" value="User_38" />
+			<string key="planned_start" value="2016-02-01T20:19:52.671599" />
+			<string key="actual_start" value="2016-02-01T20:19:52.671599" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T20:19:52.771599" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_39" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T20:37:36.139331" />
+			<string key="org:resource" value="User_7" />
+			<string key="planned_start" value="2016-02-01T20:37:36.039331" />
+			<string key="actual_start" value="2016-02-01T20:37:36.039331" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T20:37:36.139331" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_4" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T10:41:33.807035" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T10:41:33.707035" />
+			<string key="actual_start" value="2016-02-01T10:41:33.707035" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T10:41:33.807035" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_40" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.100000" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T20:44:21.746192" />
+			<string key="actual_start" value="2016-02-02T05:54:00" />
+			<float key="delay_seconds" value="32978.253808" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.100000" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_41" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.303349" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T20:51:30.136167" />
+			<string key="actual_start" value="2016-02-02T05:54:00.100000" />
+			<float key="delay_seconds" value="32549.963833" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.303349" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_42" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.826183" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T21:31:07.001305" />
+			<string key="actual_start" value="2016-02-02T05:54:00.303349" />
+			<float key="delay_seconds" value="30173.302044" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.826183" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_43" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.926183" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T21:42:43.059356" />
+			<string key="actual_start" value="2016-02-02T05:54:00.826183" />
+			<float key="delay_seconds" value="29477.766827" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:00.926183" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_44" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.026183" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T22:08:41.014535" />
+			<string key="actual_start" value="2016-02-02T05:54:00.926183" />
+			<float key="delay_seconds" value="27919.911648" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.026183" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_45" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.126183" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T22:23:38.376317" />
+			<string key="actual_start" value="2016-02-02T05:54:01.026183" />
+			<float key="delay_seconds" value="27022.649866" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.126183" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_46" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.877049" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T22:37:04.019715" />
+			<string key="actual_start" value="2016-02-02T05:54:01.126183" />
+			<float key="delay_seconds" value="26217.106468" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.877049" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_47" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.977049" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T22:47:11.579779" />
+			<string key="actual_start" value="2016-02-02T05:54:01.877049" />
+			<float key="delay_seconds" value="25610.29727" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:01.977049" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_48" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.077049" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T22:54:02.632726" />
+			<string key="actual_start" value="2016-02-02T05:54:01.977049" />
+			<float key="delay_seconds" value="25199.344323" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.077049" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_49" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.177049" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T23:06:56.426691" />
+			<string key="actual_start" value="2016-02-02T05:54:02.077049" />
+			<float key="delay_seconds" value="24425.650358" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.177049" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_5" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T11:18:05.069576" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T11:18:04.299468" />
+			<string key="actual_start" value="2016-02-01T11:18:04.299468" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T11:18:05.069576" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_50" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.277049" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T23:16:31.820852" />
+			<string key="actual_start" value="2016-02-02T05:54:02.177049" />
+			<float key="delay_seconds" value="23850.356197" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.277049" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_51" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.377049" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-01T23:42:06.202249" />
+			<string key="actual_start" value="2016-02-02T05:54:02.277049" />
+			<float key="delay_seconds" value="22316.0748" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.377049" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_52" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.477049" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T00:30:17.920784" />
+			<string key="actual_start" value="2016-02-02T05:54:02.377049" />
+			<float key="delay_seconds" value="19424.456265" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.477049" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_53" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.720181" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T01:00:16.033974" />
+			<string key="actual_start" value="2016-02-02T05:54:02.477049" />
+			<float key="delay_seconds" value="17626.443075" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.720181" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_54" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.820181" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T01:29:49.185185" />
+			<string key="actual_start" value="2016-02-02T05:54:02.720181" />
+			<float key="delay_seconds" value="15853.534996" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.820181" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_55" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.920181" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T01:33:34.095928" />
+			<string key="actual_start" value="2016-02-02T05:54:02.820181" />
+			<float key="delay_seconds" value="15628.724253" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:02.920181" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_56" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.186869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T02:03:28.354740" />
+			<string key="actual_start" value="2016-02-02T05:54:02.920181" />
+			<float key="delay_seconds" value="13834.565441" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.186869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_57" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.286869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T02:44:34.522549" />
+			<string key="actual_start" value="2016-02-02T05:54:03.186869" />
+			<float key="delay_seconds" value="11368.66432" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.286869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_58" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.386869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T02:49:16.278979" />
+			<string key="actual_start" value="2016-02-02T05:54:03.286869" />
+			<float key="delay_seconds" value="11087.00789" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.386869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_59" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.486869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T02:59:23.015077" />
+			<string key="actual_start" value="2016-02-02T05:54:03.386869" />
+			<float key="delay_seconds" value="10480.371792" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.486869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_6" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T11:18:27.141690" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T11:18:26.953658" />
+			<string key="actual_start" value="2016-02-01T11:18:26.953658" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T11:18:27.141690" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_60" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.586869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T02:59:30.613642" />
+			<string key="actual_start" value="2016-02-02T05:54:03.486869" />
+			<float key="delay_seconds" value="10472.873227" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.586869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_61" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.686869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T03:12:29.242457" />
+			<string key="actual_start" value="2016-02-02T05:54:03.586869" />
+			<float key="delay_seconds" value="9694.344412" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.686869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_62" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.786869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T03:14:48.309386" />
+			<string key="actual_start" value="2016-02-02T05:54:03.686869" />
+			<float key="delay_seconds" value="9555.377483" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.786869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_63" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.886869" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T03:22:16.951973" />
+			<string key="actual_start" value="2016-02-02T05:54:03.786869" />
+			<float key="delay_seconds" value="9106.834896" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.886869" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_64" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.986899" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T03:35:33.635740" />
+			<string key="actual_start" value="2016-02-02T05:54:03.886869" />
+			<float key="delay_seconds" value="8310.251129" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:03.986899" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_65" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.086899" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T03:57:35.994993" />
+			<string key="actual_start" value="2016-02-02T05:54:03.986899" />
+			<float key="delay_seconds" value="6987.991906" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.086899" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_66" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.186899" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T04:57:10.694497" />
+			<string key="actual_start" value="2016-02-02T05:54:04.086899" />
+			<float key="delay_seconds" value="3413.392402" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.186899" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_67" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.286899" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:02:26.623458" />
+			<string key="actual_start" value="2016-02-02T05:54:04.186899" />
+			<float key="delay_seconds" value="3097.563441" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.286899" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_68" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.386899" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:08:31.770701" />
+			<string key="actual_start" value="2016-02-02T05:54:04.286899" />
+			<float key="delay_seconds" value="2732.516198" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.386899" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_69" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.486899" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:09:12.706962" />
+			<string key="actual_start" value="2016-02-02T05:54:04.386899" />
+			<float key="delay_seconds" value="2691.679937" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:04.486899" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_7" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T12:22:03.058389" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T12:22:02.958389" />
+			<string key="actual_start" value="2016-02-01T12:22:02.958389" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T12:22:03.058389" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_70" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.062685" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:10:10.271309" />
+			<string key="actual_start" value="2016-02-02T05:54:04.486899" />
+			<float key="delay_seconds" value="2634.21559" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.062685" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_71" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.162685" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:16:06.025730" />
+			<string key="actual_start" value="2016-02-02T05:54:08.062685" />
+			<float key="delay_seconds" value="2282.036955" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.162685" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_72" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.262685" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:18:56.516013" />
+			<string key="actual_start" value="2016-02-02T05:54:08.162685" />
+			<float key="delay_seconds" value="2111.646672" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.262685" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_73" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.623583" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:31:08.741349" />
+			<string key="actual_start" value="2016-02-02T05:54:08.262685" />
+			<float key="delay_seconds" value="1379.521336" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.623583" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_74" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.806620" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:36:04.272014" />
+			<string key="actual_start" value="2016-02-02T05:54:08.623583" />
+			<float key="delay_seconds" value="1084.351569" />
+			<boolean key="was_delayed" value="true" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:54:08.806620" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_75" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T05:59:43.766957" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T05:59:43.200092" />
+			<string key="actual_start" value="2016-02-02T05:59:43.200092" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T05:59:43.766957" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_76" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T06:17:56.660177" />
+			<string key="org:resource" value="User_87" />
+			<string key="planned_start" value="2016-02-02T06:17:56.560177" />
+			<string key="actual_start" value="2016-02-02T06:17:56.560177" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T06:17:56.660177" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_77" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T06:31:52.480844" />
+			<string key="org:resource" value="User_68" />
+			<string key="planned_start" value="2016-02-02T06:31:52.380844" />
+			<string key="actual_start" value="2016-02-02T06:31:52.380844" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T06:31:52.480844" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_78" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T06:32:37.823146" />
+			<string key="org:resource" value="User_68" />
+			<string key="planned_start" value="2016-02-02T06:32:37.723146" />
+			<string key="actual_start" value="2016-02-02T06:32:37.723146" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T06:32:37.823146" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_79" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T06:48:51.308709" />
+			<string key="org:resource" value="User_30" />
+			<string key="planned_start" value="2016-02-02T06:48:51.208709" />
+			<string key="actual_start" value="2016-02-02T06:48:51.208709" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T06:48:51.308709" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_8" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T12:25:41.661166" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T12:25:41.533930" />
+			<string key="actual_start" value="2016-02-01T12:25:41.533930" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T12:25:41.661166" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_80" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T07:07:39.834619" />
+			<string key="org:resource" value="User_30" />
+			<string key="planned_start" value="2016-02-02T07:07:39.734619" />
+			<string key="actual_start" value="2016-02-02T07:07:39.734619" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T07:07:39.834619" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_81" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T07:11:08.526106" />
+			<string key="org:resource" value="User_30" />
+			<string key="planned_start" value="2016-02-02T07:11:08.426106" />
+			<string key="actual_start" value="2016-02-02T07:11:08.426106" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T07:11:08.526106" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_82" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T08:01:15.669311" />
+			<string key="org:resource" value="User_115" />
+			<string key="planned_start" value="2016-02-02T08:01:14.937385" />
+			<string key="actual_start" value="2016-02-02T08:01:14.937385" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T08:01:15.669311" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_83" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T08:03:56.175481" />
+			<string key="org:resource" value="User_115" />
+			<string key="planned_start" value="2016-02-02T08:03:56.075481" />
+			<string key="actual_start" value="2016-02-02T08:03:56.075481" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T08:03:56.175481" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_84" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T08:50:53.002338" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T08:50:52.902338" />
+			<string key="actual_start" value="2016-02-02T08:50:52.902338" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T08:50:53.002338" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_85" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T09:28:58.569145" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T09:28:58.365445" />
+			<string key="actual_start" value="2016-02-02T09:28:58.365445" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T09:28:58.569145" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_86" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T09:59:49.509507" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T09:59:49.409507" />
+			<string key="actual_start" value="2016-02-02T09:59:49.409507" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T09:59:49.509507" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_87" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T10:14:31.889472" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T10:14:31.789472" />
+			<string key="actual_start" value="2016-02-02T10:14:31.789472" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T10:14:31.889472" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_88" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T10:16:18.330830" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T10:16:18.230830" />
+			<string key="actual_start" value="2016-02-02T10:16:18.230830" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T10:16:18.330830" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_89" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T10:57:36.349544" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T10:57:36.249544" />
+			<string key="actual_start" value="2016-02-02T10:57:36.249544" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T10:57:36.349544" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_9" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-01T12:29:22.314240" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-01T12:29:22.214240" />
+			<string key="actual_start" value="2016-02-01T12:29:22.214240" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-01T12:29:22.314240" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_90" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T11:05:07.413512" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T11:05:07.220722" />
+			<string key="actual_start" value="2016-02-02T11:05:07.220722" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T11:05:07.413512" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_91" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T11:12:55.219938" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T11:12:55.097178" />
+			<string key="actual_start" value="2016-02-02T11:12:55.097178" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T11:12:55.219938" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_92" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T11:52:30.843150" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T11:52:30.743150" />
+			<string key="actual_start" value="2016-02-02T11:52:30.743150" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T11:52:30.843150" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_93" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T12:19:59.384818" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T12:19:59.284818" />
+			<string key="actual_start" value="2016-02-02T12:19:59.284818" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T12:19:59.384818" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_94" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T12:23:11.400951" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T12:23:11.300951" />
+			<string key="actual_start" value="2016-02-02T12:23:11.300951" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T12:23:11.400951" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_95" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T13:04:43.695847" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T13:04:43.595847" />
+			<string key="actual_start" value="2016-02-02T13:04:43.595847" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T13:04:43.695847" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_96" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T13:04:49.222822" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T13:04:49.122822" />
+			<string key="actual_start" value="2016-02-02T13:04:49.122822" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T13:04:49.222822" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_97" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T13:08:01.340091" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T13:08:00.073303" />
+			<string key="actual_start" value="2016-02-02T13:08:00.073303" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T13:08:01.340091" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_98" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T13:27:09.751976" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T13:27:09.639057" />
+			<string key="actual_start" value="2016-02-02T13:27:09.639057" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T13:27:09.751976" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+	<trace>
+		<string key="concept:name" value="Case_99" />
+		<event>
+			<string key="concept:name" value="A_Create Application" />
+			<date key="time:timestamp" value="2016-02-02T13:31:46.336173" />
+			<string key="org:resource" value="User_17" />
+			<string key="planned_start" value="2016-02-02T13:31:46.236173" />
+			<string key="actual_start" value="2016-02-02T13:31:46.236173" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+		<event>
+			<string key="concept:name" value="END" />
+			<date key="time:timestamp" value="2016-02-02T13:31:46.336173" />
+			<float key="delay_seconds" value="0.0" />
+			<boolean key="was_delayed" value="false" />
+		</event>
+	</trace>
+</log>
