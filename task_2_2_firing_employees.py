@@ -25,12 +25,3 @@ print(usage.sort_values())
 # earliest_available_advanced_roles  brute force      19.807291                  9.162721                          66.968307                      0.606767                50.868245
 
 
-
-#
-# FIRED = {"User_85", "User_74"}
-#
-# resource_pool = [
-#     r for r in df["org:resource"].astype(str).unique()
-#     if r not in FIRED
-# ]
-
