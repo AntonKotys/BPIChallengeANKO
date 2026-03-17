@@ -6,6 +6,11 @@ import pandas as pd
 import json
 import numpy as np
 import random
+
+import os
+
+from sklearn.cluster import AgglomerativeClustering
+
 from datetime import timedelta
 from scipy.stats import lognorm, gamma, weibull_min
 
@@ -20,6 +25,7 @@ from ResourceAllocator.SVFAllocator import SVFAllocator
 
 from task_1_4_next_activity import ExpertActivityPredictor
 from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabilityModel
+from DynamicSpawnRates.DynamicArrivalModel import DynamicArrivalModel, fit_dynamic_arrival_model
 
 # ============================================================
 # CONFIGURATION (minimal)
@@ -39,6 +45,17 @@ DIST_MAP = {
     "gamma": gamma,
     "weibull_min": weibull_min
 }
+# Resource permissions configuration
+USE_ADVANCED_PERMISSIONS = True
+
+output_dir = "sim_outputs"
+os.makedirs(output_dir, exist_ok=True)
+
+# Global seed for reproducibility of random behaviour
+GLOBAL_SEED = 42
+random.seed(GLOBAL_SEED)
+np.random.seed(GLOBAL_SEED)
+print(f"[SEED] Global seed set to {GLOBAL_SEED}")
 
 # ============================================================
 # ROUTING MODEL
@@ -329,9 +346,8 @@ class SimulationEngine:
             k = random.randint(1, len(or_candidates))
             return random.sample(or_candidates, k)
 
-
         # --- SPECIAL CASE: OR-split + exclusive cancellation option ---
-        if activity == "W_Call after offers & A_Complete": # !!! This part is not process model agnostic !!!
+        if activity == "W_Call after offers & A_Complete":  # !!! This part is not process model agnostic !!!
             cancel_act = "A_Cancelled & O_Cancelled"
 
             # --- offer loop bounding --- Anton
@@ -354,7 +370,8 @@ class SimulationEngine:
                 dist = self.predictor.get_next_activity_distribution(trace, outgoing)
                 # A_Cancelled after W_Call after offers in 8,539 cases of 191,092 occurrences in historical event log
                 # 4.47% cancellation per occurrence of W_Call after offers
-                cancel_prob = dist.get(cancel_act, 0.047) # !!! Default 0.2 must be customized properly !!! (Anton adjusted already)
+                cancel_prob = dist.get(cancel_act,
+                                       0.047)  # !!! Default 0.2 must be customized properly !!! (Anton adjusted already)
             else:
                 cancel_prob = 0.047
 
@@ -636,11 +653,11 @@ class SimulationEngine:
 MAX_INTER_ARRIVAL = 24 * 60 * 60  # I approximated this to 1 day
 
 
-def spawn_cases(engine_n: SimulationEngine,
-                n_cases: int,
-                start_activity: str,
-                start_time: datetime,
-                lambda_rate: float):
+def spawn_cases_static(engine_n: SimulationEngine,
+                       n_cases: int,
+                       start_activity: str,
+                       start_time: datetime,
+                       lambda_rate: float):
     """
     (1.2) Emi implements:
     """
@@ -649,25 +666,52 @@ def spawn_cases(engine_n: SimulationEngine,
         case_id = f"Case_{i}"
         """Change from here"""
         dur = duration_function(start_activity, t, {"event_count": 0, "ended": False})
-
         assignment = engine_n.allocate_resource(start_activity, t, dur)
 
-        if assignment is None:
-            continue
-
-        engine_n.schedule_event(
-            assignment["finish_time"],
-            case_id,
-            start_activity,
-            resource=assignment["resource"],
-            planned_start=assignment["planned_start"],
-            actual_start=assignment["actual_start"],
-            delay_seconds=assignment["delay_seconds"],
-            was_delayed=assignment["was_delayed"]
-        )
+        if assignment is not None:
+            engine_n.schedule_event(
+                assignment["finish_time"],
+                case_id,
+                start_activity,
+                resource=assignment["resource"],
+                planned_start=assignment["planned_start"],
+                actual_start=assignment["actual_start"],
+                delay_seconds=assignment["delay_seconds"],
+                was_delayed=assignment["was_delayed"]
+            )
         """Change up to here"""
         inter_arrival_time = np.random.exponential(scale=1 / lambda_rate)
         inter_arrival_time = min(inter_arrival_time, MAX_INTER_ARRIVAL)
+        t = t + timedelta(seconds=inter_arrival_time)
+
+
+def spawn_cases_dynamic(engine_n: SimulationEngine,
+                        n_cases: int,
+                        start_activity: str,
+                        start_time: datetime,
+                        arrival_model: DynamicArrivalModel):
+    """
+    Advanced version: context-dependent dynamic arrival rates.
+    """
+    t = start_time
+    for i in range(1, n_cases + 1):
+        case_id = f"Case_{i}"
+
+        dur = duration_function(start_activity, t, {"event_count": 0, "ended": False})
+        assignment = engine_n.allocate_resource(start_activity, t, dur)
+
+        if assignment is not None:
+            engine_n.schedule_event(
+                assignment["finish_time"],
+                case_id,
+                start_activity,
+                resource=assignment["resource"],
+                planned_start=assignment["planned_start"],
+                actual_start=assignment["actual_start"],
+                delay_seconds=assignment["delay_seconds"],
+                was_delayed=assignment["was_delayed"]
+            )
+        inter_arrival_time = arrival_model.sample_interarrival(t, MAX_INTER_ARRIVAL)
         t = t + timedelta(seconds=inter_arrival_time)
 
 
@@ -756,6 +800,33 @@ def learn_resource_permissions(df: pd.DataFrame) -> dict:
     return perms
 
 
+def learn_advanced_resource_permissions(df: pd.DataFrame, n_roles: int = 10, threshold: float = 0.1) -> dict:
+    role_permissions = learn_resource_permissions(df)
+
+    freq_matrix = pd.crosstab(df['org:resource'], df['concept:name'])
+
+    matrix_norm = freq_matrix.div(freq_matrix.sum(axis=1), axis=0).fillna(0)
+
+    n_clusters = min(n_roles, len(matrix_norm))
+    clusterer = AgglomerativeClustering(n_clusters=n_clusters, metric='euclidean', linkage='ward')
+    roles = clusterer.fit_predict(matrix_norm)
+
+    resource_to_role = {str(res): role for res, role in zip(matrix_norm.index, roles)}
+
+    for role_id in range(n_clusters):
+        role_resources = [res for res, r in resource_to_role.items() if r == role_id]
+        if not role_resources:
+            continue
+        for activity in freq_matrix.columns:
+            doers_in_role = sum(1 for res in role_resources if freq_matrix.loc[res, activity] > 0)
+            if doers_in_role / len(role_resources) >= threshold:
+                if activity not in role_permissions:
+                    role_permissions[activity] = set()
+                role_permissions[activity].update(role_resources)
+
+    return role_permissions
+
+
 def select_resource(activity: str, resource_pool: list, permissions: dict):
     allowed = permissions.get(activity, [])
     candidates = [r for r in resource_pool if r in allowed]
@@ -771,11 +842,14 @@ def run_simulation(
         n_cases: int = NUM_CASES,
         output_prefix: str = "sim",
         allocation_strategy: str = "random",
+        USE_ADVANCED_PERMISSIONS: bool = USE_ADVANCED_PERMISSIONS,
         batch_size_k: int = 5,
         batch_max_wait_seconds: float = None,
         svfa_weights: Optional[list] = None,
         svfa_processing_stats: Optional[dict] = None,
         svfa_prob_fin_map: Optional[dict] = None,
+        use_dynamic_arrivals: bool = False,
+        arrival_bin_hours: int = 6,
 ):
     """
     Run the full simulation with optional predictor.
@@ -791,6 +865,13 @@ def run_simulation(
     print("=" * 60)
     print("  BUSINESS PROCESS SIMULATION")
     print("=" * 60)
+
+    if USE_ADVANCED_PERMISSIONS:
+        print("[Config] Using ADVANCED permissions with clustering")
+        output_prefix += "_advanced_roles"
+    else:
+        print("[Config] Using BASIC permissions")
+        output_prefix += "_basic_roles"
 
     if predictor:
         print(f"[Config] Using Task 1.4 predictor (mode={predictor.mode})")
@@ -811,14 +892,19 @@ def run_simulation(
 
     # resource pool from log (simple)
     df = pd.read_csv("bpi2017.csv", usecols=["concept:name", "org:resource"]).dropna()
-
-    FIRED = {"User_85", "User_74"}
+    FIRED = {"User_15", "User_68"}
 
     resource_pool = [
-        r for r in df["org:resource"].astype(str).unique()
+        r for r in df["org:resource"].astype(str).unique().tolist()
         if r not in FIRED
     ]
-    permissions = learn_resource_permissions(df)  # 1.6
+    # resource_pool = df["org:resource"].astype(str).unique().tolist()
+
+    #
+    if USE_ADVANCED_PERMISSIONS:
+        permissions = learn_advanced_resource_permissions(df)
+    else:
+        permissions = learn_resource_permissions(df)
 
     # Create engine with predictor
     # (Emi): changing this as well to add the allocation strategy in the end
@@ -849,13 +935,19 @@ def run_simulation(
 
     # 1.2: Spawn cases
     print("[1.2] Spawning case arrivals...")
-    spawn_cases(engine, n_cases, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
+    if use_dynamic_arrivals:
+        print(f"[1.2] Using DYNAMIC arrival model with {arrival_bin_hours}-hour bins")
+        arrival_model = fit_dynamic_arrival_model("bpi2017.csv", bin_hours=arrival_bin_hours)
+        spawn_cases_dynamic(engine, n_cases, START_ACTIVITY, SIM_START_TIME, arrival_model)
+    else:
+        print("[1.2] Using STATIC exponential arrival model")
+        spawn_cases_static(engine, n_cases, START_ACTIVITY, SIM_START_TIME, LAMBDA_RATE)
 
     # 1.1 + 1.4: Run simulation (uses predictor in route_next)
     print("[1.1] Running discrete event simulation...")
     engine.run(duration_function)
 
-    #print("[1.6] Permission fallback count:", getattr(engine, "permission_fallback_count", 0))
+    # print("[1.6] Permission fallback count:", getattr(engine, "permission_fallback_count", 0))
 
     # K-Batch stats
     if engine.batch_allocator is not None:
@@ -873,8 +965,11 @@ def run_simulation(
 
     # Export results
     print("[Export] Saving logs...")
-    engine.export_csv(f"{output_prefix}.csv")
-    engine.export_xes(f"{output_prefix}.xes")
+
+    full_output_path = os.path.join(output_dir, output_prefix)
+
+    engine.export_csv(f"{full_output_path}.csv")
+    engine.export_xes(f"{full_output_path}.xes")
 
     # Print stats
     stats = engine.get_prediction_stats()
@@ -903,9 +998,9 @@ if __name__ == "__main__":
         context_k=2
     )
 
-    #print("\n>>> Running simulation WITH predictor (learned probabilities)...")
-    #engine_pred = run_simulation(predictor=predictor, n_cases=NUM_CASES, output_prefix="sim_predicted")
-    #print("\n✅ Simulation complete!")
+    # print("\n>>> Running simulation WITH predictor (learned probabilities)...")
+    # engine_pred = run_simulation(predictor=predictor, n_cases=NUM_CASES, output_prefix="sim_predicted")
+    # print("\n✅ Simulation complete!")
     print("\n>>> Running simulation WITH predictor and RANDOM allocation...")
     engine_random = run_simulation(
         predictor=predictor,
@@ -928,6 +1023,16 @@ if __name__ == "__main__":
         n_cases=NUM_CASES,
         output_prefix="sim_predicted_earliest_available",
         allocation_strategy="earliest_available"
+    )
+
+    print("\n>>> Running simulation WITH predictor and DYNAMIC ARRIVALS...")
+    engine_dynamic_arrivals = run_simulation(
+        predictor=predictor,
+        n_cases=NUM_CASES,
+        output_prefix="sim_predicted_dynamic_arrivals",
+        allocation_strategy="random",
+        use_dynamic_arrivals=True,
+        arrival_bin_hours=6,
     )
 
     # Example 4: SVFA allocation (Task 2.1 Advanced - Learning-based)

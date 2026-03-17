@@ -33,7 +33,7 @@ from DynamicSpawnRates.DynamicArrivalModel import DynamicArrivalModel, fit_dynam
 
 SIM_START_TIME = datetime(2016, 2, 1, 10, 0, 0)
 START_ACTIVITY = "A_Create Application"
-NUM_CASES = 100
+NUM_CASES = 1000
 MAX_EVENTS_PER_CASE = 200
 LAMBDA_RATE = 1 / 1089.18
 MAX_OFFERS_PER_CASE = 3
