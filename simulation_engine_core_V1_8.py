@@ -892,7 +892,7 @@ def run_simulation(
 
     # resource pool from log (simple)
     df = pd.read_csv("bpi2017.csv", usecols=["concept:name", "org:resource"]).dropna()
-    FIRED = {"User_15", "User_68"}
+    FIRED = {"User_145", "User_147"}
 
     resource_pool = [
         r for r in df["org:resource"].astype(str).unique().tolist()
