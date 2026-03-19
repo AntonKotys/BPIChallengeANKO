@@ -30,7 +30,7 @@ python .\1.6_grid_search.py                         # tests for finding optimal 
 # Configs
 ```python
 USE_ADVANCED_PERMISSIONS = True # Advanced role permissions; set to false for basic historical resource permissions
-NUM_CASES = 100                 # Total number of cases to generate
+NUM_CASES = 1000                 # Total number of cases to generate
 MAX_EVENTS_PER_CASE = 200       # Max events a single case can have
 ```
 
