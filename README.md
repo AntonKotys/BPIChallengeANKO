@@ -31,7 +31,6 @@ Output event logs (CSV + XES) are written to `sim_outputs/`.
 .
 ├── simulation_engine_core_final_version.py   # Main simulation engine (latest)
 ├── simulation_engine_core_V1_8.py            # Previous stable engine version
-├── simulation_engine_core_V1.7.1py           # Hotfix engine version
 │
 ├── task_1_3/                                 # 1.3 Processing Times
 │   ├── task_1_3_processing_times.py          #     Distribution fitting (AIC selection)
