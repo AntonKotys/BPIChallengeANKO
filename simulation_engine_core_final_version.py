@@ -33,7 +33,7 @@ from DynamicSpawnRates.DynamicArrivalModel import DynamicArrivalModel, fit_dynam
 
 SIM_START_TIME = datetime(2016, 2, 1, 10, 0, 0)
 START_ACTIVITY = "A_Create Application"
-NUM_CASES = 100
+NUM_CASES = 1000
 MAX_EVENTS_PER_CASE = 200
 LAMBDA_RATE = 1 / 1089.18
 MAX_OFFERS_PER_CASE = 3
@@ -347,11 +347,11 @@ class SimulationEngine:
             return random.sample(or_candidates, k)
 
 
-        # --- SPECIAL CASE: OR-split + exclusive cancellation option ---
-        if activity == "W_Call after offers & A_Complete": # !!! This part is not process model agnostic !!!
+        # SPECIAL CASE: OR-split + exclusive cancellation option
+        if activity == "W_Call after offers & A_Complete":
             cancel_act = "A_Cancelled & O_Cancelled"
 
-            # --- offer loop bounding --- Anton
+            # offer loop bounding
             offer_count = sum(
                 1 for a in trace
                 if a.startswith("O_Create Offer")
@@ -371,7 +371,7 @@ class SimulationEngine:
                 dist = self.predictor.get_next_activity_distribution(trace, outgoing)
                 # A_Cancelled after W_Call after offers in 8,539 cases of 191,092 occurrences in historical event log
                 # 4.47% cancellation per occurrence of W_Call after offers
-                cancel_prob = dist.get(cancel_act, 0.047) # !!! Default 0.2 must be customized properly !!! (Anton adjusted already)
+                cancel_prob = dist.get(cancel_act, 0.047)
             else:
                 cancel_prob = 0.047
 

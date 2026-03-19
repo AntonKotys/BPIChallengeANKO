@@ -1,12 +1,8 @@
 """
-Task 1.4 Advanced: Token Replay for Decision Point Identification
+Task 1.4 Advanced: Token Replay for Decision Point Identification.
 
-Uses pm4py's token-based replay to identify decision points (XOR gateways)
+Uses pm4py token-based replay to identify decision points (XOR gateways)
 in a Petri net and extract clean branching data for predictor training.
-
-This fulfills the advanced requirement:
-  "Identify the data for the decision points via token replay.
-   Train a predictive model that takes the history of a trace into account."
 
 Usage:
     extractor = TokenReplayDecisionExtractor()
