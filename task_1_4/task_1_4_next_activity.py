@@ -275,7 +275,7 @@ class ExpertActivityPredictor:
         training data.  Overrides transition_counts/transition_probs with
         replay-derived data while keeping the same internal data structure.
         """
-        from task_1_4_token_replay import TokenReplayDecisionExtractor, df_to_event_log
+        from task_1_4.task_1_4_token_replay import TokenReplayDecisionExtractor, df_to_event_log
 
         log = df_to_event_log(df)
 

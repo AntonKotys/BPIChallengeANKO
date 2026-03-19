@@ -1,3 +1,7 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pandas as pd
 from simulation_engine_core_final_version import learn_resource_permissions, learn_advanced_resource_permissions
 

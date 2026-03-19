@@ -14,7 +14,7 @@ import os
 import sys
 import time
 
-sys.path.insert(0, os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from simulation_engine_core_final_version import PROCESS_MODEL, GATEWAYS
 

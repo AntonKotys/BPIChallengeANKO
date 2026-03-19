@@ -23,8 +23,8 @@ from ResourceAllocator.SVFAllocator import SVFAllocator
 # Import Task 1.4 module
 
 
-from task_1_4_next_activity import ExpertActivityPredictor
-from task_1_5_rolling_stochastic_availability import RollingStochasticAvailabilityModel
+from task_1_4.task_1_4_next_activity import ExpertActivityPredictor
+from task_1_5.task_1_5_rolling_stochastic_availability import RollingStochasticAvailabilityModel
 from DynamicSpawnRates.DynamicArrivalModel import DynamicArrivalModel, fit_dynamic_arrival_model
 
 # ============================================================

@@ -30,36 +30,44 @@ python simulation_engine_core_final_version.py
 ├── simulation_engine_core_final_version.py   # Main simulation engine (latest)
 ├── simulation_engine_core_V1_8.py            # Previous stable engine version
 │
-├── task_1_3_processing_times.py              # 1.3 Processing times (distribution fitting)
-├── task_1_3_processing_times_ml.py           # 1.3 Processing times (ML-based)
-├── task_1_4_next_activity.py                 # 1.4 Next activity predictor (basic + advanced)
-├── task_1_4_token_replay.py                  # 1.4 Token replay for decision point extraction
-├── task_1_4_metrics.py                       # 1.4 Evaluation metrics
-├── task_1_5_resource_availability.py         # 1.5 Resource availability (basic)
-├── task_1_5_rolling_stochastic_availability.py # 1.5 Resource availability (stochastic)
+├── task_1_3/                                 # 1.3 Processing Times
+│   ├── task_1_3_processing_times.py          #     Distribution fitting (AIC selection)
+│   └── task_1_3_processing_times_ml.py       #     XGBoost regression with temporal context
 │
-├── ResourceAllocator/                        # 2.1 Resource allocation strategies
+├── task_1_4/                                 # 1.4 Next Activity Prediction
+│   ├── task_1_4_next_activity.py             #     k-gram (basic) + RandomForest (advanced)
+│   ├── task_1_4_token_replay.py              #     Token replay for decision point extraction
+│   ├── task_1_4_metrics.py                   #     Evaluation metrics
+│   ├── evaluate_task_1_4.py                  #     Base evaluation script
+│   ├── evaluate_task_1_4_mapped.py           #     Evaluation with activity mapping
+│   └── evaluate_task_1_4_benchmark.py        #     Model benchmarking (RF, HistGB)
+│
+├── task_1_5/                                 # 1.5 Resource Availability
+│   ├── task_1_5_resource_availability.py     #     Basic availability model
+│   └── task_1_5_rolling_stochastic_availability.py  # Stochastic shift model
+│
+├── task_1_6/                                 # 1.6 Resource Permissions
+│   ├── 1.6_grid_search.py                    #     Role-discovery hyperparameter search
+│   └── 1.6_test.py                           #     Permission validation tests
+│
+├── ResourceAllocator/                        # 2.1 Resource Allocation Strategies
 │   ├── ResourceAllocatorAlgo.py              #     Base allocator (random, round-robin, earliest)
 │   ├── BatchAllocator.py                     #     K-Batching (Zeng & Zhao 2005)
 │   ├── SVFAllocator.py                       #     SVFA scoring (Middelhuis et al. 2025)
 │   └── train_svfa.py                         #     Bayesian optimization for SVFA weights
 │
-├── DynamicSpawnRates/                        # 1.2 Instance arrival rates
+├── DynamicSpawnRates/                        # 1.2 Instance Arrival Rates
 │   └── DynamicArrivalModel.py                #     Context-aware dynamic spawn rates
 │
-├── task_2_2_firing_employees.py              # 2.3 Employee firing optimization
-├── task_2_2_scaling_experiment.py            # 2.2 Scaling experiment runner
-├── task_2_2_evaluation.py                    # 2.2 Evaluation metrics
+├── task_2_2/                                 # 2.2–2.3 Evaluation & Optimization
+│   ├── task_2_2_evaluation.py                #     Evaluation metrics
+│   ├── task_2_2_scaling_experiment.py        #     Scaling experiment (100/500/1000 cases)
+│   └── task_2_2_firing_employees.py          #     Employee firing optimization
 │
-├── 1.6_grid_search.py                        # 1.6 Role-discovery hyperparameter search
-├── 1.6_test.py                               # 1.6 Permission validation tests
-│
-├── evaluate_task_1_4.py                      # Evaluation script for task 1.4
-├── evaluate_task_1_4_mapped.py               # Evaluation with activity mapping
-├── evaluate_task_1_4_benchmark.py            # Model benchmarking (RF, HistGB)
-├── test_task_1_4.py                          # Unit tests for task 1.4
-├── test_svfa_allocator.py                    # Unit tests for SVFA allocator
-├── verify_task_1_4.py                        # Verification script for task 1.4
+├── tests/                                    # Test Scripts
+│   ├── test_task_1_4.py                      #     Tests for next activity predictor
+│   ├── test_svfa_allocator.py                #     Tests for SVFA allocator
+│   └── verify_task_1_4.py                    #     Verification of predictor constraints
 │
 ├── bpianko9.0.bpmn                           # BPMN process model
 ├── bpi2017.csv                               # BPIC 2017 event log (not in git)
@@ -68,20 +76,11 @@ python simulation_engine_core_final_version.py
 ├── svfa_weights_optimized.json               # Trained SVFA weights
 │
 ├── sim_outputs/                              # Simulation output logs and plots
-│   ├── scaling_experiment_outputs/
-│   ├── scaling_experiment_outputs_v2/
-│   └── scaling_experiment_outputs_v3/
 │
 ├── analysis/                                 # Standalone analysis & exploration scripts
-│   ├── SimpleProcessMining.py                #   Process mining exploration
-│   ├── ProcessInvariants.py                  #   Process invariant analysis
-│   ├── kMeans.py                             #   K-means clustering
-│   ├── availabilities.py                     #   Resource availability analysis
-│   └── ...                                   #   (and other exploratory notebooks)
 │
 ├── archive/                                  # Old versions (kept for reference)
-│   ├── engine_core_versions/                 #   Engine core V1.0 through V1.9
-│   └── ...                                   #   Deprecated optimization scripts
+│   └── engine_core_versions/                 #     Engine core V1.0 through V1.9
 │
 ├── reports/                                  # Generated reports and documents
 │

@@ -7,10 +7,14 @@ Verifies that the predictor:
 3. Simulation generates valid traces (handling OR gateway parallelism)
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pandas as pd
 from collections import Counter, defaultdict
 
-from task_1_4_next_activity import ExpertActivityPredictor
+from task_1_4.task_1_4_next_activity import ExpertActivityPredictor
 
 # PROCESS_MODEL for validation
 PROCESS_MODEL = {

@@ -8,13 +8,16 @@ Usage:
     python test_task_1_4.py
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import pandas as pd
 import numpy as np
 from collections import Counter
 from datetime import datetime, timedelta
 
-# Import the Task 1.4 modules
-from task_1_4_next_activity import ExpertActivityPredictor
+from task_1_4.task_1_4_next_activity import ExpertActivityPredictor
 
 
 def print_header(title):
