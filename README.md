@@ -82,8 +82,6 @@ python simulation_engine_core_final_version.py
 ├── archive/                                  # Old versions (kept for reference)
 │   └── engine_core_versions/                 #     Engine core V1.0 through V1.9
 │
-├── reports/                                  # Generated reports and documents
-│
 └── requirements.txt                          # Python dependencies
 ```
 
