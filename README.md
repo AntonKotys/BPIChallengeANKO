@@ -219,6 +219,41 @@ All randomness uses a global seed of **42** for reproducibility.
 
 ## References
 
+### Dataset
 1. van Dongen, B. (2017). BPI Challenge 2017. 4TU.ResearchData. https://doi.org/10.4121/uuid:5f3067df-f10b-45da-b98b-86ae4c7a310b
-2. Middelhuis, J. et al. (2025). Learning policies for resource allocation in business processes. *Inf. Syst.*, 128, art. 102492.
-3. Zeng, D. D. & Zhao, J. L. (2005). Effective role resolution in workflow management. *INFORMS J. Comput.*, 17(3), 374–387.
+
+### Process Mining & Simulation
+2. van der Aalst, W. (2016). *Process Mining: Data Science in Action.* Springer Berlin Heidelberg.
+3. Rozinat, A., Mans, R. S., Song, M., & van der Aalst, W. M. (2009). Discovering simulation models. *Information Systems*, 34(3), 305–327.
+4. Rozinat, A. (2010). *Process Mining: Conformance and Extension.*
+5. Carmona, J., van Dongen, B. F., Solti, A., & Weidlich, M. (2018). *Conformance Checking — Relating Processes and Models.*
+6. Polančič, G., & Cegnar, B. (2017). Complexity metrics for process models — A systematic literature review. *Computer Standards & Interfaces*, 51, 104–117.
+
+### Predictive Process Monitoring & Sequence Modeling
+7. Hochreiter, S., & Schmidhuber, J. (1997). Long short-term memory. *Neural Computation*, 9(8), 1735–1780.
+8. Graves, A. (2012). Long short-term memory. In *Supervised Sequence Labelling with Recurrent Neural Networks* (pp. 37–45).
+9. Di Francescomarino, C., & Ghidini, C. (2022). Predictive process monitoring. In *Process Mining Handbook* (pp. 320–346). Springer International Publishing.
+10. Kunkler, M., Mustroph, H., & Rinderle-Ma, S. (2025). Probabilistic Suffix Prediction of Business Processes.
+11. Mustroph, H., Kunkler, M., & Rinderle-Ma, S. (2025). ELoader: A Web Application for Event Log Selection and Preparation for Neural Networks.
+
+### Processing Times & Uncertainty
+12. Bishop, C. M. (1994). Mixture density networks.
+13. Weytjens, H., & De Weerdt, J. (2022). Learning uncertainty with artificial neural networks for predictive process monitoring. *Applied Soft Computing*, 125, 109134.
+14. Gal, Y., & Ghahramani, Z. (2016). Dropout as a Bayesian approximation: Representing model uncertainty in deep learning. In *ICML* (pp. 1050–1059). PMLR.
+15. Kneib, T., Silbersdorff, A., & Säfken, B. (2023). Rage against the mean — A review of distributional regression approaches. *Econometrics and Statistics*, 26, 99–123.
+16. Kunkler, M., & Rinderle-Ma, S. (2025). Probabilistic learning of temporal uncertainties in business processes. In *BPMDS 2025 / EMMSAD 2025*, LNBIP 558 (pp. 193–208). Springer.
+17. Orlandi, V., Murray, J., Linero, A., & Volfovsky, A. (2021). Density regression with Bayesian additive regression trees. *arXiv:2112.12259*.
+
+### Resource Allocation & Optimization
+18. Middelhuis, J., Lo Bianco, R., Sherzer, E., Bukhsh, Z., Adan, I., & Dijkman, R. M. (2025). Learning policies for resource allocation in business processes. *Inf. Syst.*, 128, art. 102492.
+19. Zeng, D. D. & Zhao, J. L. (2005). Effective role resolution in workflow management. *INFORMS J. Comput.*, 17(3), 374–387.
+20. Russell, N., van der Aalst, W. M. P., ter Hofstede, A. H. M., & Edmond, D. (2005). Workflow resource patterns: Identification, representation and tool support. In *CAiSE 2005*, LNCS 3520 (pp. 216–232). Springer.
+21. Park, G. & Song, M. (2019). Prediction-based resource allocation using LSTM and minimum cost and maximum flow algorithm. In *ICPM 2019* (pp. 121–128). IEEE.
+22. Kunkler, M. & Rinderle-Ma, S. (2024). Online resource allocation to process tasks under uncertain resource availabilities. In *ICPM 2024* (pp. 137–144). IEEE.
+23. López-Pintado, O., Dumas, M., & Berx, J. (2024). Discovery, simulation, and optimization of business processes with differentiated resources. *Information Systems*, 120, 102289.
+
+### Instance Arrival Rates
+24. Kirchdorfer, L., Özdemir, K., Kusenic, S., van der Aa, H., & Stuckenschmidt, H. (2025). A divide-and-conquer approach for modeling arrival times in business process simulation. In *BPM 2025*, LNCS 16044 (pp. 325–342). Springer.
+
+### Organizational Models
+25. Yang, J., Ouyang, C., van der Aalst, W. M., ter Hofstede, A. H., & Yu, Y. (2022). OrdinoR: A framework for discovering, evaluating, and analyzing organizational models using event logs. *Decision Support Systems*, 158, 113771.
