@@ -892,15 +892,14 @@ def run_simulation(
 
     # resource pool from log (simple)
     df = pd.read_csv("bpi2017.csv", usecols=["concept:name", "org:resource"]).dropna()
-    FIRED = {"User_145", "User_147"}
+    # the ones that get the smallest number of tasks assigned
+    FIRED = {"User_85", "User_103"}
 
     resource_pool = [
         r for r in df["org:resource"].astype(str).unique().tolist()
         if r not in FIRED
     ]
-    # resource_pool = df["org:resource"].astype(str).unique().tolist()
 
-    #
     if USE_ADVANCED_PERMISSIONS:
         permissions = learn_advanced_resource_permissions(df)
     else:
