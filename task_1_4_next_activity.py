@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Tuple, Any
 
 from sklearn.preprocessing import LabelEncoder
-from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.model_selection import GroupShuffleSplit
 
 
@@ -107,7 +107,8 @@ class ExpertActivityPredictor:
 
     def fit(self, df: pd.DataFrame, process_model: Optional[Dict] = None,
             gateways: Optional[Dict] = None,
-            bpmn_path: Optional[str] = None) -> 'ExpertActivityPredictor':
+            bpmn_path: Optional[str] = None,
+            activity_mapping: Optional[Dict[str, str]] = None) -> 'ExpertActivityPredictor':
         """
         Fit the predictor on historical event log data.
 
@@ -118,6 +119,10 @@ class ExpertActivityPredictor:
             bpmn_path: Optional path to BPMN model file. When provided together
                 with use_token_replay=True, uses token-based replay to identify
                 decision points instead of sequential pair counting.
+            activity_mapping: Optional dict mapping raw activity names to
+                clustered names (e.g. for BPMN models with clustered activities).
+                When provided, activities are mapped and consecutive duplicates
+                within each case are collapsed before training.
 
         Returns:
             self (for method chaining)
@@ -130,6 +135,22 @@ class ExpertActivityPredictor:
         # Ensure proper column names
         df = self._normalize_columns(df)
         df = df.sort_values(["case_id", "timestamp"]).reset_index(drop=True)
+
+        if activity_mapping is not None:
+            df["activity"] = df["activity"].map(
+                lambda a: activity_mapping.get(a, a)
+            )
+            prev_case = None
+            prev_act = None
+            keep = []
+            for _, row in df.iterrows():
+                if row["case_id"] != prev_case or row["activity"] != prev_act:
+                    keep.append(True)
+                else:
+                    keep.append(False)
+                prev_case = row["case_id"]
+                prev_act = row["activity"]
+            df = df[keep].reset_index(drop=True)
 
         # Fit encoder for all activities
         self.activity_encoder.fit(df["activity"].astype(str).unique())
@@ -150,6 +171,8 @@ class ExpertActivityPredictor:
         # Optionally fit advanced ML model
         if self.mode == "advanced":
             self._fit_advanced_ml(df)
+        elif self.mode == "advanced_enriched":
+            self._fit_advanced_enriched_ml(df)
 
         return self
 
@@ -448,6 +471,167 @@ class ExpertActivityPredictor:
         val_acc = self.model.score(X[val_idx], y[val_idx])
         print(f"[Advanced Model] Validation accuracy: {val_acc:.3f}")
 
+    def _fit_advanced_enriched_ml(self, df: pd.DataFrame):
+        """
+        Train an enriched ML model that uses case-level attributes from the
+        BPIC 2017 dataset in addition to the standard temporal features.
+
+        Extra features (compared to _fit_advanced_ml):
+          - case:RequestedAmount (loan amount)
+          - case:LoanGoal (encoded)
+          - case:ApplicationType (encoded)
+          - loop_count: how many times the current activity appeared before in this trace
+          - trace_length: number of events so far in the trace
+          - n_offers: cumulative offer events seen so far in the trace
+          - last_credit_score: most recent CreditScore value in the trace (0 if none)
+          - last_offered_amount: most recent OfferedAmount value in the trace (0 if none)
+
+        Uses vectorized pandas operations for speed on large event logs.
+        """
+        from sklearn.preprocessing import LabelEncoder as _LE
+
+        df = df.copy()
+        df["activity"] = df["activity"].astype(str)
+        df["act_idx"] = self.activity_encoder.transform(df["activity"])
+        df["hour"] = df["timestamp"].dt.hour
+        df["weekday"] = df["timestamp"].dt.dayofweek
+        df["case_start_time"] = df.groupby("case_id")["timestamp"].transform("min")
+        df["elapsed_seconds"] = (df["timestamp"] - df["case_start_time"]).dt.total_seconds()
+
+        loan_goal_enc = _LE()
+        if "case:LoanGoal" in df.columns:
+            df["loan_goal_idx"] = loan_goal_enc.fit_transform(
+                df["case:LoanGoal"].fillna("Unknown").astype(str)
+            )
+        else:
+            df["loan_goal_idx"] = 0
+
+        app_type_enc = _LE()
+        if "case:ApplicationType" in df.columns:
+            df["app_type_idx"] = app_type_enc.fit_transform(
+                df["case:ApplicationType"].fillna("Unknown").astype(str)
+            )
+        else:
+            df["app_type_idx"] = 0
+
+        self._enriched_loan_goal_enc = loan_goal_enc
+        self._enriched_app_type_enc = app_type_enc
+
+        if "case:RequestedAmount" in df.columns:
+            df["req_amount"] = df["case:RequestedAmount"].fillna(0.0)
+        else:
+            df["req_amount"] = 0.0
+
+        offer_activities = {"O_Create Offer", "O_Create Offer & O_Created", "O_Created"}
+        df["is_offer"] = df["activity"].isin(offer_activities).astype(int)
+        df["n_offers_cumsum"] = df.groupby("case_id")["is_offer"].cumsum()
+
+        df["trace_pos"] = df.groupby("case_id").cumcount()
+
+        df["loop_count"] = df.groupby(["case_id", "activity"]).cumcount()
+
+        if "CreditScore" in df.columns:
+            df["credit_filled"] = df["CreditScore"].where(df["CreditScore"] > 0)
+            df["last_credit"] = df.groupby("case_id")["credit_filled"].ffill().fillna(0.0)
+        else:
+            df["last_credit"] = 0.0
+
+        if "OfferedAmount" in df.columns:
+            df["offered_filled"] = df["OfferedAmount"].where(df["OfferedAmount"] > 0)
+            df["last_offered"] = df.groupby("case_id")["offered_filled"].ffill().fillna(0.0)
+        else:
+            df["last_offered"] = 0.0
+
+        df["time_diff"] = df.groupby("case_id")["timestamp"].diff().dt.total_seconds().fillna(0)
+        df["mean_time_diff"] = df.groupby("case_id")["time_diff"].transform(
+            lambda x: x.expanding().mean()
+        )
+
+        if "org:resource" in df.columns:
+            df["resource_idx"] = pd.factorize(df["org:resource"])[0]
+            df["n_resources_cum"] = df.groupby("case_id")["resource_idx"].transform(
+                lambda x: x.expanding().apply(lambda s: s.nunique(), raw=False)
+            )
+        else:
+            df["n_resources_cum"] = 1
+
+        df["target_act_idx"] = df.groupby("case_id")["act_idx"].shift(-1)
+        df_train = df.dropna(subset=["target_act_idx"]).copy()
+        df_train["target_act_idx"] = df_train["target_act_idx"].astype(int)
+
+        print(f"[Advanced Enriched] Building features for {len(df_train)} transitions...")
+
+        act_idx_arr = df_train["act_idx"].values
+        case_ids = df_train["case_id"].values
+
+        n = len(df_train)
+        ngram_matrix = np.full((n, self.window_size), -1, dtype=int)
+
+        case_boundaries = np.where(case_ids[:-1] != case_ids[1:])[0] + 1
+        case_starts = np.concatenate([[0], case_boundaries])
+        case_ends = np.concatenate([case_boundaries, [n]])
+
+        for cs, ce in zip(case_starts, case_ends):
+            case_acts = act_idx_arr[cs:ce]
+            for local_i in range(len(case_acts)):
+                global_i = cs + local_i
+                start = max(0, local_i - self.window_size + 1)
+                hist = case_acts[start:local_i + 1]
+                if len(hist) < self.window_size:
+                    ngram_matrix[global_i, self.window_size - len(hist):] = hist
+                else:
+                    ngram_matrix[global_i, :] = hist
+
+        enriched_cols = np.column_stack([
+            df_train["hour"].values,
+            df_train["weekday"].values,
+            df_train["elapsed_seconds"].values,
+            df_train["req_amount"].values,
+            df_train["loan_goal_idx"].values,
+            df_train["app_type_idx"].values,
+            df_train["loop_count"].values,
+            df_train["trace_pos"].values,
+            df_train["n_offers_cumsum"].values,
+            df_train["last_credit"].values,
+            df_train["last_offered"].values,
+            df_train["mean_time_diff"].values,
+            df_train["n_resources_cum"].values,
+        ])
+
+        X = np.hstack([ngram_matrix.astype(float), enriched_cols])
+        y = df_train["target_act_idx"].values
+        groups = df_train["case_id"].values
+
+        print(f"[Advanced Enriched] Feature matrix shape: {X.shape}")
+
+        splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+        train_idx, val_idx = next(splitter.split(X, y, groups=groups))
+
+        print(f"[Advanced Enriched] Training RandomForest (500 trees, depth 25)...")
+        self.model = RandomForestClassifier(
+            n_estimators=500, max_depth=25, min_samples_leaf=2,
+            random_state=42, n_jobs=-1
+        )
+        self.model.fit(X[train_idx], y[train_idx])
+
+        val_acc = self.model.score(X[val_idx], y[val_idx])
+        print(f"[Advanced Enriched Model] Validation accuracy: {val_acc:.3f}")
+
+        self._enriched_feature_names = [
+            f"act_hist_{j}" for j in range(self.window_size)
+        ] + [
+            "hour", "weekday", "elapsed_seconds", "requested_amount",
+            "loan_goal", "app_type", "loop_count", "trace_length",
+            "n_offers", "last_credit_score", "last_offered_amount",
+            "mean_time_diff", "n_resources_cum"
+        ]
+
+        importances = self.model.feature_importances_
+        sorted_idx = np.argsort(importances)[::-1]
+        print("[Advanced Enriched Model] Top-10 feature importances:")
+        for rank, idx in enumerate(sorted_idx[:10]):
+            print(f"    {rank+1}. {self._enriched_feature_names[idx]}: {importances[idx]:.4f}")
+
     # =========================================================
     # PREDICTION METHODS
     # =========================================================
@@ -629,6 +813,7 @@ class ExpertActivityPredictor:
         enabled_next: Optional[List[str]] = None,
         return_distribution: bool = False,
         current_activity: Optional[str] = None,
+        case_attributes: Optional[Dict[str, Any]] = None,
     ):
         """
         Unified prediction API for both basic and advanced modes.
@@ -640,6 +825,8 @@ class ExpertActivityPredictor:
             enabled_next: Allowed next activities (XOR outgoing)
             return_distribution: If True, return dict of probabilities
             current_activity: Current activity (defaults to last in prefix)
+            case_attributes: Optional dict of case-level attributes for enriched mode
+                (e.g. case:RequestedAmount, case:LoanGoal, case:ApplicationType, etc.)
 
         Returns:
             If return_distribution: Dict[str, float]
@@ -658,12 +845,13 @@ class ExpertActivityPredictor:
                 current_activity=current_activity
             )
 
-        # Advanced mode uses ML model
+        # Advanced / advanced_enriched mode uses ML model
         return self._predict_advanced(
             case_prefix_activities,
             current_timestamp,
             case_start_timestamp,
-            enabled_next=enabled_next
+            enabled_next=enabled_next,
+            case_attributes=case_attributes,
         )
 
     def _predict_advanced(
@@ -672,6 +860,7 @@ class ExpertActivityPredictor:
         current_timestamp=None,
         case_start_timestamp=None,
         enabled_next: Optional[List[str]] = None,
+        case_attributes: Optional[Dict[str, Any]] = None,
     ) -> Optional[str]:
         """Advanced ML-based prediction."""
         if self.model is None:
@@ -700,8 +889,13 @@ class ExpertActivityPredictor:
             if case_start_timestamp is not None:
                 elapsed = (current_timestamp - case_start_timestamp).total_seconds()
 
-        context_feat = np.array([hour, wday, elapsed], dtype=float)
-        features = np.concatenate([ngram_feat, context_feat]).reshape(1, -1)
+        if self.mode == "advanced_enriched" and case_attributes is not None:
+            features = self._build_enriched_features(
+                ngram_feat, hour, wday, elapsed, prefix_activities, case_attributes
+            )
+        else:
+            context_feat = np.array([hour, wday, elapsed], dtype=float)
+            features = np.concatenate([ngram_feat, context_feat]).reshape(1, -1)
 
         pred_idx = self.model.predict(features)[0]
         predicted = self.activity_encoder.inverse_transform([pred_idx])[0]
@@ -712,6 +906,53 @@ class ExpertActivityPredictor:
             return self.sample_next_activity(prefix_activities, enabled_next=enabled_next)
 
         return predicted
+
+    def _build_enriched_features(
+        self,
+        ngram_feat: np.ndarray,
+        hour: int, wday: int, elapsed: float,
+        prefix_activities: List[str],
+        case_attributes: Dict[str, Any],
+    ) -> np.ndarray:
+        """Build the enriched feature vector for advanced_enriched mode prediction."""
+        offer_activities = {"O_Create Offer", "O_Create Offer & O_Created", "O_Created"}
+
+        req_amount = float(case_attributes.get("case:RequestedAmount", 0.0) or 0.0)
+
+        loan_goal_raw = str(case_attributes.get("case:LoanGoal", "Unknown") or "Unknown")
+        if hasattr(self, "_enriched_loan_goal_enc"):
+            try:
+                loan_goal_idx = self._enriched_loan_goal_enc.transform([loan_goal_raw])[0]
+            except ValueError:
+                loan_goal_idx = 0
+        else:
+            loan_goal_idx = 0
+
+        app_type_raw = str(case_attributes.get("case:ApplicationType", "Unknown") or "Unknown")
+        if hasattr(self, "_enriched_app_type_enc"):
+            try:
+                app_type_idx = self._enriched_app_type_enc.transform([app_type_raw])[0]
+            except ValueError:
+                app_type_idx = 0
+        else:
+            app_type_idx = 0
+
+        current_act = prefix_activities[-1] if prefix_activities else ""
+        loop_count = sum(1 for a in prefix_activities[:-1] if a == current_act)
+        trace_length = len(prefix_activities)
+        n_offers = sum(1 for a in prefix_activities if a in offer_activities)
+        last_credit = float(case_attributes.get("last_credit_score", 0.0) or 0.0)
+        last_offered = float(case_attributes.get("last_offered_amount", 0.0) or 0.0)
+        mean_time_diff = float(case_attributes.get("mean_time_diff", 0.0) or 0.0)
+        n_resources_cum = float(case_attributes.get("n_resources_cum", 1.0) or 1.0)
+
+        enriched_feat = np.array([
+            hour, wday, elapsed, req_amount, loan_goal_idx, app_type_idx,
+            loop_count, trace_length, n_offers, last_credit, last_offered,
+            mean_time_diff, n_resources_cum,
+        ], dtype=float)
+
+        return np.concatenate([ngram_feat, enriched_feat]).reshape(1, -1)
 
     # =========================================================
     # SERIALIZATION METHODS
