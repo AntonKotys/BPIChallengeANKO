@@ -2,7 +2,7 @@ import pandas as pd
 from simulation_engine_core_final_version import learn_resource_permissions, learn_advanced_resource_permissions
 
 print("Loading data...")
-sim = pd.read_csv("sim_outputs/sim_predicted_random_basic_roles.csv").dropna(subset=["concept:name","org:resource"])
+sim = pd.read_csv("sim_outputs/sim_predicted_random_advanced_roles.csv").dropna(subset=["concept:name","org:resource"])
 hist = pd.read_csv("bpi2017.csv").dropna(subset=["concept:name","org:resource"])
 
 for df in (sim, hist):
