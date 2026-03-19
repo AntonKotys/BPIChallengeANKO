@@ -29,6 +29,7 @@ python simulation_engine_core_final_version.py
 .
 ├── simulation_engine_core_final_version.py   # Main simulation engine (latest)
 ├── simulation_engine_core_V1_8.py            # Previous stable engine version
+├── simulation_engine_core_V1.7.1py           # Hotfix engine version
 │
 ├── task_1_3/                                 # 1.3 Processing Times
 │   ├── task_1_3_processing_times.py          #     Distribution fitting (AIC selection)
@@ -69,18 +70,26 @@ python simulation_engine_core_final_version.py
 │   ├── test_svfa_allocator.py                #     Tests for SVFA allocator
 │   └── verify_task_1_4.py                    #     Verification of predictor constraints
 │
-├── bpianko9.0.bpmn                           # BPMN process model
-├── bpi2017.csv                               # BPIC 2017 event log (not in git)
-├── distributions.json                        # Fitted processing time distributions
-├── ml_metrics.json                           # ML model evaluation metrics
-├── svfa_weights_optimized.json               # Trained SVFA weights
-│
-├── sim_outputs/                              # Simulation output logs and plots
-│
 ├── analysis/                                 # Standalone analysis & exploration scripts
+│   ├── *.py                                  #     Process mining, clustering, diagnostics
+│   └── plots/                                #     Generated plots (heuristic nets, clusters, etc.)
 │
 ├── archive/                                  # Old versions (kept for reference)
 │   └── engine_core_versions/                 #     Engine core V1.0 through V1.9
+│
+├── sim_outputs/                              # Simulation output logs and plots
+│   ├── scaling_experiment_outputs/           #     V1 scaling experiment results
+│   ├── scaling_experiment_outputs_v2/        #     V2 with SVFA optimization sweeps
+│   └── scaling_experiment_outputs_v3/        #     V3 final results
+│
+├── bpianko9.0.bpmn                           # BPMN process model
+├── bpi2017.csv                               # BPIC 2017 event log (not in git)
+├── BPI_Challenge_2017.xes.gz                 # Original XES event log (compressed)
+├── distributions.json                        # Fitted processing time distributions
+├── ml_metrics.json                           # ML model evaluation metrics
+├── svfa_weights_optimized.json               # Trained SVFA weights
+├── gateway_comparison_report.txt             # XOR gateway prediction comparison report
+├── SimpleMetrics.ipynb                       # Jupyter notebook with basic metrics
 │
 └── requirements.txt                          # Python dependencies
 ```
@@ -98,6 +107,9 @@ The simulation engine (`simulation_engine_core_final_version.py`) spawns process
 ---
 
 ## Task Breakdown
+
+### 1.2 Instance Arrival Rates
+Context-aware dynamic spawn rates based on historical arrival patterns (`DynamicSpawnRates/`).
 
 ### 1.3 Processing Times
 Distribution fitting (exponential, gamma, Weibull, lognormal) selected via AIC. Advanced: XGBoost regression with temporal context.
