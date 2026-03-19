@@ -122,7 +122,7 @@ class SVFAllocator:
 
         w = self.weights
 
-        # --- 1. Cache allowed resources per activity type ----------------
+        # Step 1: Cache allowed resources per activity type
         allowed_cache: Dict[str, set] = {}
         unique_activities: set = set()
         for task in self.pending_tasks:
@@ -131,7 +131,7 @@ class SVFAllocator:
             if act not in allowed_cache:
                 allowed_cache[act] = set(self.base.get_allowed_resources(act))
 
-        # --- 2. Cache mean / var for relevant (resource, activity) -------
+        # Step 2: Cache mean/var for eligible (resource, activity) pairs
         mean_cache: Dict[tuple, float] = {}
         var_cache: Dict[tuple, float] = {}
         for act in unique_activities:
@@ -141,12 +141,12 @@ class SVFAllocator:
                 mean_cache[key] = self._get_mean(res, act)
                 var_cache[key] = self._get_var(res, act)
 
-        # --- 3. Queue lengths per activity type --------------------------
+        # Step 3: Queue lengths per activity type
         queue_lengths: Dict[str, int] = {}
         for t in self.pending_tasks:
             queue_lengths[t["activity"]] = queue_lengths.get(t["activity"], 0) + 1
 
-        # --- 4. Pre-compute ProbFin per activity (with compound lookup) --
+        # Step 4: ProbFin per activity (handles compound activities via "&")
         prob_fin_cache: Dict[str, float] = {}
         for act in unique_activities:
             pf = self.prob_fin_map.get(act, 0.0)
@@ -156,9 +156,7 @@ class SVFAllocator:
                     pf = max(pf, self.prob_fin_map[p])
             prob_fin_cache[act] = pf
 
-        # --- 5. Pre-compute ActivityRank per (resource, activity) --------
-        #   For each resource, rank the unique activities it can do by
-        #   their mean processing time (lowest mean = rank 1).
+        # Step 5: ActivityRank — rank tasks by mean processing time per resource
         activity_ranks: Dict[tuple, int] = {}
         for res in available:
             acts_for_res = []
@@ -170,9 +168,7 @@ class SVFAllocator:
             for rank, (_, act) in enumerate(acts_for_res, 1):
                 activity_ranks[(res, act)] = rank
 
-        # --- 6. Pre-compute ResourceRank per (resource, activity) --------
-        #   For each activity, rank available eligible resources by their
-        #   mean processing time (lowest mean = rank 1).
+        # Step 6: ResourceRank — rank resources by mean processing time per activity
         resource_ranks: Dict[tuple, int] = {}
         for act in unique_activities:
             ress_for_act = []
@@ -184,7 +180,7 @@ class SVFAllocator:
             for rank, (_, res) in enumerate(ress_for_act, 1):
                 resource_ranks[(res, act)] = rank
 
-        # --- 7. Score every (resource, task) pair in one pass ------------
+        # Step 7: Score every (resource, task) pair
         scored_pairs = []
         for task_idx, task in enumerate(self.pending_tasks):
             act = task["activity"]
@@ -205,7 +201,7 @@ class SVFAllocator:
 
         scored_pairs.sort()
 
-        # --- 8. Greedy assignment: best score first, skip conflicts ------
+        # Step 8: Greedy assignment — best score first, skip conflicts
         assigned_resources: set = set()
         assigned_task_indices: set = set()
         assignments: List[Dict] = []
@@ -241,7 +237,6 @@ class SVFAllocator:
             assigned_resources.add(res)
             assigned_task_indices.add(task_idx)
 
-        # Remove assigned tasks (reverse order to keep indices valid)
         for idx in sorted(assigned_task_indices, reverse=True):
             self.pending_tasks.pop(idx)
 

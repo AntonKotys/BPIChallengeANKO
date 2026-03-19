@@ -27,19 +27,25 @@ from sklearn.model_selection import GroupShuffleSplit
 
 class ExpertActivityPredictor:
     """
-    Task 1.4 Next Activity Predictor (Process-Model-Aware)
+    Task 1.4 Next Activity Predictor (Process-Model-Aware).
 
-    Key feature: Learns transitions ONLY for valid process model edges.
-    This prevents predicting activities that cannot follow the current activity.
+    Learns transitions ONLY for valid process model edges, preventing
+    impossible successor predictions at XOR gateways.
 
-    Basic mode:
-        - Learns P(next | current_activity, preceding k activities) from event log
-        - At XOR gateways, samples next activity based on learned probabilities
-        - ONLY considers transitions that are valid per process model
+    Three modes are supported:
 
-    Advanced mode:
-        - Uses ML model (GradientBoosting) with contextual features
-        - Takes timestamp, hour, weekday, elapsed time into account
+    basic:
+        k-gram model with Laplace smoothing over process-model-valid edges.
+        Fallback hierarchy: per-activity context -> global context -> uniform.
+
+    advanced:
+        GradientBoostingClassifier trained on n-gram + temporal features
+        (hour, weekday, elapsed time).
+
+    advanced_enriched:
+        RandomForestClassifier (500 trees, depth 25) trained on n-gram +
+        temporal + 11 case-level attributes (RequestedAmount, CreditScore,
+        LoanGoal, loop count, trace length, etc.).  Best accuracy: 81.4%.
     """
 
     def __init__(
@@ -74,29 +80,25 @@ class ExpertActivityPredictor:
         self.min_probability = float(min_probability)
         self.rng = np.random.default_rng(random_state)
 
-        # Process model for constraining transitions
         self.process_model = process_model or {}
         self.gateways = gateways or {}
 
-        # Basic mode: Per-activity transition probabilities
-        # transition_counts[current_activity][context_tuple][next_activity] = count
+        # transition_counts[activity][k][context_tuple][next_activity] = count
         self.transition_counts: Dict[str, Dict[int, Dict[tuple, Dict[str, int]]]] = {}
-        # transition_probs[current_activity][context_tuple] = {next: prob}
+        # transition_probs[activity][k][context_tuple] = {next: prob}
         self.transition_probs: Dict[str, Dict[int, Dict[tuple, Dict[str, float]]]] = {}
 
-        # Global fallback (without current activity)
+        # Global fallback k-gram tables (not conditioned on current activity)
         self.counts_by_ctx = {k: defaultdict(lambda: defaultdict(int))
                               for k in range(1, self.basic_k + 1)}
         self.probs_by_ctx = {k: {} for k in range(1, self.basic_k + 1)}
         self.global_next_counts = defaultdict(int)
         self.global_next_probs = {}
 
-        # Advanced mode: ML model
         self.activity_encoder = LabelEncoder()
         self.activities_set = set()
         self.model = None
 
-        # Token replay support (Task 1.4 Advanced)
         self.use_token_replay = use_token_replay
         self.token_replay_extractor = None
         self.replay_stats = {}
@@ -132,7 +134,6 @@ class ExpertActivityPredictor:
         if gateways is not None:
             self.gateways = gateways
 
-        # Ensure proper column names
         df = self._normalize_columns(df)
         df = df.sort_values(["case_id", "timestamp"]).reset_index(drop=True)
 
@@ -152,23 +153,17 @@ class ExpertActivityPredictor:
                 prev_act = row["activity"]
             df = df[keep].reset_index(drop=True)
 
-        # Fit encoder for all activities
         self.activity_encoder.fit(df["activity"].astype(str).unique())
         self.activities_set = set(self.activity_encoder.classes_.tolist())
 
-        # Fit basic k-gram model (process-model-aware)
         self._fit_basic_kgram_process_aware(df)
 
-        # Token replay: override transition counts with replay-derived data
-        # when enabled. The basic fit above runs first as a fallback baseline,
-        # then token replay replaces the counts with cleaner decision point data.
+        # Token replay overrides k-gram counts with cleaner decision-point data
         if self.use_token_replay and bpmn_path is not None:
             self._fit_with_token_replay(df, bpmn_path)
 
-        # Also fit global fallback
         self._fit_global_fallback(df)
 
-        # Optionally fit advanced ML model
         if self.mode == "advanced":
             self._fit_advanced_ml(df)
         elif self.mode == "advanced_enriched":
@@ -198,11 +193,9 @@ class ExpertActivityPredictor:
 
         For each activity, learns P(next | context) ONLY for valid successors.
         """
-        # Initialize structures
         self.transition_counts = {}
         self.transition_probs = {}
 
-        # Count transitions per (current_activity, context) -> next
         for case_id, group in df.groupby("case_id", sort=False):
             activities = group["activity"].astype(str).tolist()
 
@@ -213,35 +206,27 @@ class ExpertActivityPredictor:
                 current_act = activities[i]
                 next_act = activities[i + 1]
 
-                # Check if this transition is valid in process model
                 if self.process_model:
                     valid_successors = self.process_model.get(current_act, [])
                     if valid_successors and next_act not in valid_successors:
-                        # Skip this transition - it's not valid per process model
                         continue
 
-                # Initialize structure for this activity if needed
                 if current_act not in self.transition_counts:
                     self.transition_counts[current_act] = {
                         k: defaultdict(lambda: defaultdict(int))
                         for k in range(1, self.basic_k + 1)
                     }
 
-                # Count for each context length k
                 for k in range(1, self.basic_k + 1):
-                    # Context is the k activities BEFORE current (not including current)
                     start_idx = i - k
                     if start_idx < 0:
-                        # Use shorter context
                         context = tuple(activities[0:i]) if i > 0 else ()
                     else:
                         context = tuple(activities[start_idx:i])
 
                     if len(context) == k or (len(context) < k and len(context) == i):
-                        # Valid context
                         self.transition_counts[current_act][k][context][next_act] += 1
 
-        # Convert counts to probabilities
         for activity, k_dict in self.transition_counts.items():
             self.transition_probs[activity] = {}
 
@@ -255,8 +240,7 @@ class ExpertActivityPredictor:
                     )
 
     def _fit_global_fallback(self, df: pd.DataFrame):
-        """Fit global fallback probabilities (legacy k-gram without current activity)."""
-        # Reset
+        """Fit global fallback probabilities (k-gram not conditioned on current activity)."""
         for k in self.counts_by_ctx:
             self.counts_by_ctx[k] = defaultdict(lambda: defaultdict(int))
             self.probs_by_ctx[k] = {}
@@ -279,7 +263,6 @@ class ExpertActivityPredictor:
                     context = tuple(activities[start_idx : i + 1])
                     self.counts_by_ctx[k][context][next_act] += 1
 
-        # Convert to probs
         for k in range(1, self.basic_k + 1):
             for context, next_counts in self.counts_by_ctx[k].items():
                 self.probs_by_ctx[k][context] = self._compute_smoothed_probs(next_counts)
@@ -289,15 +272,8 @@ class ExpertActivityPredictor:
     def _fit_with_token_replay(self, df: pd.DataFrame, bpmn_path: str):
         """
         Use token-based replay to identify decision points and extract clean
-        training data. Overrides transition_counts and transition_probs with
+        training data.  Overrides transition_counts/transition_probs with
         replay-derived data while keeping the same internal data structure.
-
-        This addresses the advanced requirement:
-            "Identify the data for the decision points via token replay."
-
-        Args:
-            df: Normalized DataFrame with case_id, activity, timestamp
-            bpmn_path: Path to BPMN model file
         """
         from task_1_4_token_replay import TokenReplayDecisionExtractor, df_to_event_log
 
@@ -332,13 +308,9 @@ class ExpertActivityPredictor:
 
     def _build_counts_from_replay_decisions(self, decisions: list):
         """
-        Build transition_counts and transition_probs from token replay
-        decision data. Uses the same data structure as
-        _fit_basic_kgram_process_aware so all downstream prediction
-        methods work identically.
-
-        Args:
-            decisions: List of decision dicts from TokenReplayDecisionExtractor
+        Convert token replay decision data into the same transition_counts /
+        transition_probs structure used by _fit_basic_kgram_process_aware,
+        so all downstream prediction methods work identically.
         """
         self.transition_counts = {}
 
@@ -349,7 +321,6 @@ class ExpertActivityPredictor:
             if not prefix:
                 continue
 
-            # Skip silent transitions (no corresponding activity label)
             if chosen.startswith("[silent:"):
                 continue
 
@@ -372,7 +343,6 @@ class ExpertActivityPredictor:
                 if len(context) == k or (len(context) < k and len(context) == idx):
                     self.transition_counts[current_act][k][context][chosen] += 1
 
-        # Convert counts to probabilities (same as basic fit)
         self.transition_probs = {}
         for activity, k_dict in self.transition_counts.items():
             self.transition_probs[activity] = {}
@@ -397,7 +367,6 @@ class ExpertActivityPredictor:
         if not next_counts and not valid_successors:
             return {}
 
-        # Determine activities to include
         if valid_successors:
             activities = list(set(valid_successors))
         else:
@@ -411,7 +380,6 @@ class ExpertActivityPredictor:
         denominator = total + self.alpha * num_activities
 
         if denominator <= 0:
-            # Uniform if no data
             return {a: 1.0 / num_activities for a in activities}
 
         return {
@@ -660,26 +628,22 @@ class ExpertActivityPredictor:
 
         prefix_activities = [str(a) for a in prefix_activities]
 
-        # Determine current activity
         if current_activity is None:
             current_activity = prefix_activities[-1]
         current_activity = str(current_activity)
 
-        # Get valid successors from process model
         if enabled_next is not None:
             valid_next = [str(a) for a in enabled_next]
         elif self.process_model and current_activity in self.process_model:
             valid_next = [str(a) for a in self.process_model[current_activity]]
         else:
-            valid_next = None  # No constraint
+            valid_next = None
 
-        # Try to get distribution from per-activity table
         if current_activity in self.transition_probs:
             dist = self._get_dist_for_activity(current_activity, prefix_activities, valid_next)
             if dist:
                 return dist
 
-        # Fallback to global k-gram
         return self._get_global_fallback_dist(prefix_activities, valid_next)
 
     def _get_dist_for_activity(
@@ -691,11 +655,9 @@ class ExpertActivityPredictor:
         """Get distribution from per-activity transition table."""
         activity_probs = self.transition_probs.get(current_activity, {})
 
-        # Try different context lengths (longest first)
         for k in range(min(self.basic_k, len(prefix) - 1), 0, -1):
             probs_k = activity_probs.get(k, {})
 
-            # Build context (k activities before current)
             if len(prefix) > k:
                 context = tuple(prefix[-(k+1):-1])
             else:
@@ -704,13 +666,11 @@ class ExpertActivityPredictor:
             if context in probs_k:
                 dist = dict(probs_k[context])
 
-                # Filter to valid_next if provided
                 if valid_next is not None:
                     dist = self._filter_and_smooth(dist, valid_next)
 
                 return dist
 
-        # No matching context found
         return {}
 
     def _get_global_fallback_dist(
@@ -749,18 +709,11 @@ class ExpertActivityPredictor:
         valid_next = [str(a) for a in valid_next]
 
         if is_counts:
-            # Laplace smooth over valid activities
-            tmp = {}
-            for act in valid_next:
-                count = float(dist_or_counts.get(act, 0))
-                tmp[act] = count + self.alpha
+            tmp = {act: float(dist_or_counts.get(act, 0)) + self.alpha
+                   for act in valid_next}
         else:
-            # Already probabilities - just filter and re-smooth
-            tmp = {}
-            for act in valid_next:
-                # Use existing prob as pseudo-count
-                p = dist_or_counts.get(act, 0.0)
-                tmp[act] = p + self.alpha
+            tmp = {act: dist_or_counts.get(act, 0.0) + self.alpha
+                   for act in valid_next}
 
         total = sum(tmp.values())
         if total <= 0:
@@ -794,7 +747,6 @@ class ExpertActivityPredictor:
         )
 
         if not dist:
-            # Fallback: uniform over enabled_next
             if enabled_next:
                 return self.rng.choice([str(a) for a in enabled_next])
             return None
@@ -845,7 +797,6 @@ class ExpertActivityPredictor:
                 current_activity=current_activity
             )
 
-        # Advanced / advanced_enriched mode uses ML model
         return self._predict_advanced(
             case_prefix_activities,
             current_timestamp,
@@ -864,7 +815,6 @@ class ExpertActivityPredictor:
     ) -> Optional[str]:
         """Advanced ML-based prediction."""
         if self.model is None:
-            # Fallback to basic
             return self.sample_next_activity(prefix_activities, enabled_next=enabled_next)
 
         def map_to_idx(act: str) -> int:
@@ -900,9 +850,7 @@ class ExpertActivityPredictor:
         pred_idx = self.model.predict(features)[0]
         predicted = self.activity_encoder.inverse_transform([pred_idx])[0]
 
-        # Check if prediction is valid
         if enabled_next and predicted not in enabled_next:
-            # Prediction invalid - fallback to basic sampling
             return self.sample_next_activity(prefix_activities, enabled_next=enabled_next)
 
         return predicted
@@ -972,7 +920,6 @@ class ExpertActivityPredictor:
 
         outputs = {}
 
-        # Save per-activity transition probs
         activity_probs_json = {}
         for activity, k_dict in self.transition_probs.items():
             activity_probs_json[activity] = {}
@@ -990,13 +937,11 @@ class ExpertActivityPredictor:
             json.dump(activity_probs_json, f, ensure_ascii=False, indent=2)
         outputs["activity_probs"] = str(probs_path)
 
-        # Save global probs (fallback)
         global_path = Path(output_dir) / f"{filename_prefix}_global_probs.json"
         with open(global_path, "w", encoding="utf-8") as f:
             json.dump(self.global_next_probs, f, ensure_ascii=False, indent=2)
         outputs["global_probs"] = str(global_path)
 
-        # Save process model if available
         if self.process_model:
             model_path = Path(output_dir) / f"{filename_prefix}_process_model.json"
             with open(model_path, "w", encoding="utf-8") as f:
@@ -1023,7 +968,6 @@ class ExpertActivityPredictor:
             with open(process_model_path, "r", encoding="utf-8") as f:
                 self.process_model = json.load(f)
 
-        # Reconstruct transition_probs
         self.transition_probs = {}
         for activity, k_dict in activity_probs_json.items():
             self.transition_probs[activity] = {}
@@ -1080,31 +1024,27 @@ if __name__ == "__main__":
     print("Task 1.4: Next Activity Predictor (Process-Model-Aware)")
     print("=" * 60)
 
-    # Define a simple process model
     process_model = {
-        "A": ["B", "C"],  # XOR: A can go to B or C
-        "B": ["D"],       # Sequence: B -> D
-        "C": ["D"],       # Sequence: C -> D
+        "A": ["B", "C"],
+        "B": ["D"],
+        "C": ["D"],
         "D": ["END"],
     }
 
-    # Create sample training data
     sample_data = pd.DataFrame({
         "case_id": ["C1"]*4 + ["C2"]*4 + ["C3"]*4 + ["C4"]*4 + ["C5"]*4,
         "activity": [
-            "A", "B", "D", "END",  # A->B path
-            "A", "B", "D", "END",  # A->B path
-            "A", "B", "D", "END",  # A->B path
-            "A", "C", "D", "END",  # A->C path
-            "A", "C", "D", "END",  # A->C path
+            "A", "B", "D", "END",
+            "A", "B", "D", "END",
+            "A", "B", "D", "END",
+            "A", "C", "D", "END",
+            "A", "C", "D", "END",
         ],
         "timestamp": pd.date_range("2024-01-01", periods=20, freq="h")
     })
 
-    print("\nTraining data: 3 cases with A->B, 2 cases with A->C")
-    print("Expected P(B|A) = 60%, P(C|A) = 40%")
+    print("\nTraining data: 3x A->B, 2x A->C => expected P(B|A)=60%, P(C|A)=40%")
 
-    # Train predictor with process model
     predictor = ExpertActivityPredictor(
         mode="basic",
         basic_context_k=2,
@@ -1112,7 +1052,6 @@ if __name__ == "__main__":
     )
     predictor.fit(sample_data)
 
-    # Test prediction at activity A
     print("\nPredicting from activity A:")
     dist = predictor.get_next_activity_distribution(
         ["A"],
@@ -1121,16 +1060,14 @@ if __name__ == "__main__":
     )
     print(f"P(next | current=A) = {dist}")
 
-    # Verify it respects process model
-    print("\nTrying to predict from A with invalid successor E:")
+    print("\nPredicting from A with invalid successor E:")
     dist_invalid = predictor.get_next_activity_distribution(
         ["A"],
-        enabled_next=["B", "C", "E"],  # E is not in process model
+        enabled_next=["B", "C", "E"],
         current_activity="A"
     )
-    print(f"Distribution (E should get low/smoothed prob): {dist_invalid}")
+    print(f"Distribution (E gets smoothed prob): {dist_invalid}")
 
-    # Sample multiple times
     print("\nSampling 100 times from A:")
     from collections import Counter
     samples = [predictor.sample_next_activity(["A"], enabled_next=["B", "C"]) for _ in range(100)]
