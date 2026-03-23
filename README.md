@@ -15,7 +15,7 @@ source venv/bin/activate        # macOS/Linux
 pip install -r requirements.txt
 ```
 
-Run a simulation (500 cases, earliest-available allocation):
+Run a simulation (1000 cases, earliest available, round robin, random, k-batch, SVFA):
 
 ```bash
 python simulation_engine_core_final_version.py
