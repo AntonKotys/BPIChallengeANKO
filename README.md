@@ -108,7 +108,7 @@ Five strategies are implemented in `ResourceAllocator/`:
 
 ### 2.2 Evaluation
 
-Metrics: average cycle time (days), average activity delay (hours), average resource occupation (%), weighted resource fairness (Jain index), share of delayed human activities (%).
+Metrics: average cycle time (days), average activity delay (hours), average resource occupation (%), weighted resource fairness (Jain index), share of delayed activities (%).
 
 Scaling experiments at 100 / 500 / 1000 cases show:
 - **Earliest-available** consistently achieves the lowest cycle time and delay.
